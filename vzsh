@@ -1,0 +1,163 @@
+#!/bin/sh
+
+############################
+# Variables
+############################
+
+hostfile=~/.vz/hosts
+keyfile=~/.vz/vzsh-key
+statefile=~/.vz/ctstate
+
+############################
+# Variables (Do not edit)
+############################
+
+SSH="ssh -l root -i $keyfile -X"
+vzhosts=`cat $hostfile | grep -v ^# | grep . | tr '\012' ' ' `
+
+############################
+# Functions
+############################
+
+# vz_athosts cmd
+# Run command on all the hosts.
+vz_athosts() {
+  cmd=$1
+  for vzhost in $vzhosts;
+  do
+    $SSH $vzhost $cmd
+  done
+}
+
+# vz_getctname ct
+# Get fqdn or cid for container from dns or statefile
+vz_getctname() {
+  ct=$1
+  # Try to find container name.
+  if ! [[ "$ct" =~ ^[0-9]*$ ]]; then
+    vz_container=`getent hosts $ct | awk '{print $2}'`
+  fi
+
+  # fqdn/cid?
+  if [ "$vz_container" == "" ]; then
+    # FQDN?
+    vz_container=`grep " $ct " $statefile | awk '{print $2}'`
+  fi
+
+  if [ "$vz_container" == "" ]; then
+    echo "Can not find container $vz_container"
+    exit 1
+  fi
+
+  vz_return=$vz_container
+}
+
+# vz_gethost ct
+# Get host for container
+vz_gethost() {
+  ct=$1
+  vz_getctname $ct
+  cid=$vz_return
+  vz_return=`cat $statefile | awk '{print $2" "$1" "$3}' | grep "^$cid " | cut -d" " -f2`
+}
+
+# vz_updatestate
+# Update containers and their state from all hosts
+vz_updatestate() {
+  [ -f "$statefile" ] && rm -f $statefile
+  touch $statefile
+  vz_athosts list >> $statefile
+}
+
+# usage
+# Print usage
+usage() {
+	cat <<EOF
+VZ shell
+
+Usage: $0 ...
+
+Actions:
+	[-r] container [command]
+		Run command in container.
+	-l
+		Show list of all containers.
+	-u
+		Do not update container states.
+	-g
+		Generate ssh-keyspairs. After keys been generated
+		distribute your ${keyfile}.pub to all vz-hosts
+		you need to access. Admin also has to update
+		vzshd.ini to give you persmissions.
+	-h
+		Show this.
+EOF
+}
+
+############################
+# Main
+############################
+
+# Defaults
+action=run
+update=true
+
+#goto=ct
+#X11=""
+
+for opt in $@; do
+  case "$opt" in
+    -g) action=genkeys; shift; break;;
+    -h) action=usage; shift; break;;
+    -l) action=list; shift;;
+    -r) action=run; shift; ct=$1; shift; cmd=$*; break;;
+    -u) update=false; shift;;
+#    -x) X11="-X"; shift;;
+    *) ct=$1; shift; cmd=$*; break;;
+  esac
+done
+
+if [ "$action" == "run" -a "$ct" == "" ]; then
+  # Trying to run without host
+  action=usage
+fi
+
+case "$action" in
+  genkeys)
+    if [ -f "${keyfile}" -o -f "${keyfile}.pub" ]; then
+      echo "Keyfiles $keyfile or ${keyfile}.pub exists."
+      echo "Remove before generating."
+      exit 1
+    fi
+    ssh-keygen -q -C vzsh-$USERNAME -f $keyfile -N '' && (
+      echo "$keyfile generated"
+      perl -pi -e "s#^#command=\"~/bin/vzshd user=$USERNAME\" #" ${keyfile}.pub
+      echo ""
+      echo "Distribute this to ~root/.ssh/authorized_keys on all vz-hosts:"
+      echo ""
+      cat ${keyfile}.pub
+    )
+    break;;
+  list)
+    [ update == 'true' ] && vz_updatestate
+
+    cat $statefile
+    break;;
+  run)
+    vz_gethost $ct
+    vzhost=$vz_return
+    if [ ! "$vzhost" == "" ]
+    then
+      $SSH $vzhost run $ct $cmd
+    else
+      echo "Container not found."
+      exit 1
+    fi
+    break;;
+  usage)
+    usage
+    exit
+    break;;
+esac
+
+#ssh -l root -i ~/.vz/vzsh-key hr-vz1 ls

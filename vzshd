@@ -1,0 +1,130 @@
+#!/bin/sh
+
+#
+# This script is supposed to be run by the sshd in the vz-host
+# Users public keys need to be distributed to each vz-host and a vzshd.ini
+# need to be configured to set permissions.
+#
+# Example key in .ssh/authorized_keys
+#
+# command="~/bin/vzshd user=yownas" ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAyrPGbmPS5gK
+# dRt8LjG3lS60gLVBlLu+yq98bHoEmGeZUW8UyxTfPdDAo27PoblzzTdjBqxccw7Jg48ayzllQkvCJjTK
+# W2u6Kv2wVeQ== yownas-vzsh
+#
+# Example .vz/vzshd.ini file
+#
+# # Groups.
+# # Format: group:user1[[,user2],user3]
+# [groups]
+# wheel:urbblo
+# 
+# # List of containers. Need to be fqdn of container, * is special
+# # Format: fqdn:user1|@group1[,user2|@group2]
+# [vzcts]
+# www.local.domain:yownas
+# *:@wheel
+
+
+############################
+# Variables
+############################
+
+vzshdini=~/.vz/vzshd.ini
+
+############################
+# Functions
+############################
+
+usage() {
+        cat <<EOF
+VZ shell daemon
+
+Usage: $0 ...
+
+Actions:
+        list
+                Show list of all containers.
+	run ct [command]
+		Run command in container.
+EOF
+}
+
+# vz_checkperm user ct
+# Check persmissions for user
+vz_checkperm() {
+  export tmp_user=$1
+  export tmp_ct=$2
+  vz_return=noperm
+
+  # I'm so sorry for this... /Jonas
+  grep -v "^#" $vzshdini|awk '/^\[/{p=0}/^\[vzcts\]$/{p=1}{if(p)print $0}'|egrep -v '^\[|^$'|egrep "^$tmp_ct:|^\*:"|cut -d: -f2|tr , '\012'|egrep `grep -v "^#" $vzshdini|awk '/^\[/{p=0}/^\[groups\]$/{p=1}{if(p)print "@"$0","}'|egrep -v '^\[|^,$'|grep "[:,]$tmp_user,"|awk -F: '{printf "^"$1"$|"}END{print "^"ENVIRON["tmp_user"]"$"}'` > /dev/null && vz_return=allowed
+
+  # The line above checks .vz/vzshd.ini and sets vz_return to allowed
+  # if the user or a group the user belong to has access to a container.
+}
+
+# vz_parse options ...
+# Parse arguments from ssh-key
+vz_parse_arg() {
+  for opt in $*; do
+    case "$opt" in
+      user=*) user=`echo $1 | sed 's/user=//'`; shift;;
+      --) shift; break;;
+    esac
+  done
+}
+
+# vz_parse options ...
+# Parse arguments from client
+vz_parse() {
+  for opt in $*; do
+    case "$opt" in
+      list) action=list; shift;;
+      run) action=run; shift; ct=$1; shift; ccmd=$*; break;;
+      --) shift; break;;
+    esac
+  done
+}
+
+
+############################
+# Main
+############################
+
+# Default values
+action=usage
+user=nobody
+
+# Parse arguments
+vz_parse_arg $*
+
+# Parse command
+vz_parse $SSH_ORIGINAL_COMMAND
+
+case "$action" in
+  list)
+    vzlist -Hat -o hostname,ctid,status | sed "s/^/`hostname`\t/"
+    break;;
+  run)
+    # Check if user has access to container
+    vz_checkperm $user $ct
+    if [ "$vz_return" == "allowed" ]
+    then
+      # Use "exec" instead of "enter" if there is a command to be sent.
+      ctlcmd=enter;
+      if [ \! "$ccmd" == "" ]
+      then
+        ctlcmd=exec;
+      fi
+      vzctl --quiet $ctlcmd $ct $ccmd
+    else
+      echo "$0: permission denied for $user@$ct" 
+      exit 1
+    fi
+    break;;
+  usage)
+    usage
+    exit
+    break;;
+esac
+
