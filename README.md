@@ -19,4 +19,19 @@ vzshd is used on the host as a "server". vzsh doesn't get root-shell access to t
 
 ## Installation
 
-Copy vzsh somewhere where admin-users will have access to it. Users then need to create a folder ~/.vz/ where they put a file ~/.vz/hosts that contains a list of OpenVZ hosts.
+Copy vzsh somewhere where admin-users will have access to it. Users then need to create a folder ~/.vz/ where they put a file ~/.vz/hosts that contains a list of OpenVZ hosts. One per line, comments with # are allowed. Then create a ssh-key-pair with vzsh -g.
+
+In the OpenVZ hosts you need to place vzshd in ~root/bin/vzshd and create an ini-file, ~root/.vz/vzshd.ini that controlls who can log in.
+
+Example ~root/.vz/vzshd.ini:
+
+    [groups]
+    wheel:user1
+      
+    [vzcts]
+    www.example.com:user2
+    *:@wheel
+
+In ~root/.ssh/authorized_keys you need to add the public keys generated in the step above.
+
+If permissions are correct everything should be up and running now. (Probably not. Since this is still in early development.)
