@@ -34,7 +34,7 @@ vz_athosts() {
 vz_getctname() {
   ct=$1
   # Try to find container name.
-  if ! [[ "$ct" =~ ^[0-9]*$ ]]; then
+  if ! [ $ct -ge 0 ] 2>/dev/null; then
     vz_container=`getent hosts $ct | awk '{print $2}'`
   fi
 
@@ -129,9 +129,9 @@ case "$action" in
       echo "Remove before generating."
       exit 1
     fi
-    ssh-keygen -q -C vzsh-$USERNAME -f $keyfile -N '' && (
+    ssh-keygen -q -C vzsh-`whoami` -f $keyfile -N '' && (
       echo "$keyfile generated"
-      perl -pi -e "s#^#command=\"~/bin/vzshd user=$USERNAME\" #" ${keyfile}.pub
+      perl -pi -e "s#^#command=\"~/bin/vzshd user=`whoami`\" #" ${keyfile}.pub
       echo ""
       echo "Distribute this to ~root/.ssh/authorized_keys on all vz-hosts:"
       echo ""
@@ -139,7 +139,7 @@ case "$action" in
     )
     break;;
   list)
-    [ update == 'true' ] && vz_updatestate
+    [ "$update" == "true" ] && vz_updatestate
 
     cat $statefile
     break;;
