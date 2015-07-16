@@ -12,7 +12,6 @@ statefile=~/.vz/ctstate
 # Variables (Do not edit)
 ############################
 
-SSH="ssh -l root -t -o PasswordAuthentication=no -i $keyfile"
 vzhosts=`cat $hostfile 2> /dev/null| grep -v ^# | grep . | tr '\012' ' ' `
 
 ############################
@@ -120,30 +119,28 @@ then
   action=usage
   needconf=no
 else
-  for opt in $@; do
-    case "$opt" in
-      -g) action=genkeys; shift; keysuffix=$1 needconf=no; shift; break;;
-      -h) action=hostrun; ct=#; shift;;
+  while [ \! -z "$*" ]; do
+    case "$1" in
+      -g) action=genkeys; shift; keysuffix=$1; needconf=no; shift; break;;
+      -h) action=hostrun; shift; ct=$1; shift; ccmd=$*; shift $#; break;;
       -\?) action=usage; needconf=no; shift; break;;
+      -k) shift; keysuffix=$1; shift;;
       -l) action=list; shift;;
-      -r) action=run; ct=#; shift;;
+      -r) action=run; shift; ct=$1; shift; ccmd=$*; break;;
       -t) action=template; needconf=no; shift;;
       -u) update=false; shift;;
-      -x) action=xrun; ct=#; shift;;
+      -x) action=xrun; shift; ct=$1; shift; ccmd=$*; break;;
       *) ct=$1; shift; ccmd=$*; break;;
     esac
   done
-
-  # Containername needed but not provided.
-  if [ "$ct" == "#" ]; then
-    action=usage
-    needconf=no
-  fi
 fi
 
 # Set default key suffix if none is given.
 [ -z "$keysuffix" ] && keysuffix=user 
 keyfile=`echo $keyfile | sed "s/SUFFIX/${keysuffix}/"`
+
+# Set ssh-command to use now when we know which key to use.
+SSH="ssh -l root -t -o PasswordAuthentication=no -i $keyfile"
 
 if [ "$needconf" == "yes" ]
 then
@@ -176,9 +173,14 @@ case "$action" in
       echo ""
       exit 1
     fi
+    keyusername=`whoami`
+    if [ \! "$keysuffix" == "user" ]
+    then
+      keyusername="${keyusername}_${keysuffix}"
+    fi
     ssh-keygen -q -C `echo $keyfile | sed 's#^.*/##'` -f $keyfile -N '' && (
       echo "$keyfile generated"
-      perl -pi -e "s#^#command=\"~/bin/vzshd user=`whoami`\" #" ${keyfile}.pub
+      perl -pi -e "s#^#command=\"~/bin/vzshd user=${keyusername}\" #" ${keyfile}.pub
       echo ""
       echo "Distribute this to ~root/.ssh/authorized_keys on all vz-hosts:"
       echo ""
