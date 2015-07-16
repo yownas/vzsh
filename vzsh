@@ -6,7 +6,7 @@
 ############################
 
 hostfile=~/.vz/hosts
-keyfile=~/.vz/vzsh-`whoami`-key
+keyfile=~/.vz/vzsh-`whoami`-SUFFIX
 statefile=~/.vz/ctstate
 
 ############################
@@ -14,7 +14,7 @@ statefile=~/.vz/ctstate
 ############################
 
 SSH="ssh -l root -t -i $keyfile"
-vzhosts=`cat $hostfile | grep -v ^# | grep . | tr '\012' ' ' `
+vzhosts=`cat $hostfile 2> /dev/null| grep -v ^# | grep . | tr '\012' ' ' `
 
 ############################
 # Functions
@@ -77,24 +77,30 @@ usage() {
 	cat <<EOF
 VZ shell
 
-Usage: $0 ...
+Usage: $0 [options] [action]
+
+Options:
+	-k suffix
+		Select key to use.
+	-u
+		Do not update container states.
 
 Actions:
 	[-r] container [command]
-		Run command in container.
+		Run command/shell in container.
 	-x container [command]
-		Run command in container with X11 forwarding.
+		Run command/shell in container with X11 forwarding.
 	-l
-		Show list of all containers.
-	-u
-		Do not update container states.
-	-g
+		Show list of all containers on all hosts.
+	-g [suffix]
 		Generate ssh-keyspairs. After keys been generated
 		distribute your ${keyfile}.pub to all vz-hosts
 		you need to access. Admin also has to update
 		vzshd.ini to give you persmissions.
+	-t
+		Create folder and empty hostfile-template, implies -g.
 	-h container [command]
-		Run command on host of container.
+		Run command/shell on host of container.
 	-?
 		Show this.
 EOF
@@ -107,18 +113,22 @@ EOF
 # Defaults
 action=run
 update=true
+# If needconf is set to yes we do need config-files.
+needconf=yes
 
 if [ -z "$1" ]
 then
   action=usage
+  needconf=no
 else
   for opt in $@; do
     case "$opt" in
-      -g) action=genkeys; shift; break;;
+      -g) action=genkeys; shift; keysuffix=$1 needconf=no; shift; break;;
       -h) action=hostrun; ct=#; shift;;
-      -\?) action=usage; shift; break;;
+      -\?) action=usage; needconf=no; shift; break;;
       -l) action=list; shift;;
       -r) action=run; ct=#; shift;;
+      -t) action=template; needconf=no; shift;;
       -u) update=false; shift;;
       -x) action=xrun; ct=#; shift;;
       *) ct=$1; shift; ccmd=$*; break;;
@@ -128,25 +138,33 @@ else
   # Containername needed but not provided.
   if [ "$ct" == "#" ]; then
     action=usage
+    needconf=no
   fi
 fi
 
-# Sanity checks
-if [ \! -s "$hostfile" ]
-then
-  usage
-  echo ""
-  echo "ERROR: $hostfile missing or empty."
-  exit 1
-fi
+# Set default key suffix if none is given.
+[ -z "$keysuffix" ] && keysuffix=user 
+keyfile=`echo $keyfile | sed "s/SUFFIX/${keysuffix}/"`
 
-if [ \! -s "$keyfile" -o \! -s "${keyfile}.pub" ]
+if [ "$needconf" == "yes" ]
 then
-  usage
-  echo ""
-  echo "ERROR: $keyfile or ${keyfile}.pub missing or empty."
-  echo "Generate key-pair with: $0 -g"
-  exit 1
+  # Sanity checks
+  if [ \! -s "$hostfile" ]
+  then
+    usage
+    echo ""
+    echo "ERROR: $hostfile missing or empty."
+    exit 1
+  fi
+
+  if [ \! -s "$keyfile" -o \! -s "${keyfile}.pub" ]
+  then
+    usage
+    echo ""
+    echo "ERROR: $keyfile or ${keyfile}.pub missing or empty."
+    echo "Generate key-pair with: $0 -g"
+    exit 1
+  fi
 fi
 
 case "$action" in
@@ -156,21 +174,19 @@ case "$action" in
       echo "Remove if you want to generate a new one.."
       echo ""
       cat ${keyfile}.pub
+      echo ""
       exit 1
     fi
-    ssh-keygen -q -C vzsh-`whoami` -f $keyfile -N '' && (
+    ssh-keygen -q -C `echo $keyfile | sed 's#^.*/##'` -f $keyfile -N '' && (
       echo "$keyfile generated"
       perl -pi -e "s#^#command=\"~/bin/vzshd user=`whoami`\" #" ${keyfile}.pub
       echo ""
       echo "Distribute this to ~root/.ssh/authorized_keys on all vz-hosts:"
       echo ""
       cat ${keyfile}.pub
+      echo ""
     )
-    break;;
-  list)
-    [ "$update" == "true" ] && vz_updatestate
-    cat $statefile
-    break;;
+    ;;
   hostrun)
     [ "$update" == "true" ] && vz_updatestate
     vz_getctname $ct
@@ -184,7 +200,11 @@ case "$action" in
       echo "hostrun: Container host not found."
       exit 1
     fi
-    break;;
+    ;;
+  list)
+    [ "$update" == "true" ] && vz_updatestate
+    cat $statefile
+    ;;
   run)
     [ "$update" == "true" ] && vz_updatestate
     vz_getctname $ct
@@ -195,10 +215,30 @@ case "$action" in
     then
       $SSH $vzhost run $ct $ccmd
     else
-      echo "Container host not found."
+      echo "run: Container host not found."
       exit 1
     fi
-    break;;
+    ;;
+  template)
+    # Check if config exists, otherwise create a new one.
+    tmp_dir="`echo $hostfile | sed 's#/[^/]*$##'`"
+    if [ \! -d "$tmp_dir" ]
+    then
+      mkdir -p "$tmp_dir"
+      touch $hostfile
+      cat <<EOF
+$0: $tmp_dir & $hostfile created.
+
+IMPORTANT! You need to add OpenVZ hosts to this file.
+
+EOF
+    fi
+    $0 -g
+    ;;
+  usage)
+    usage
+    exit
+    ;;
   xrun)
     [ "$update" == "true" ] && vz_updatestate
     vz_getctname $ct
@@ -211,13 +251,9 @@ case "$action" in
       ssh -i ${keyfile}.tmp$$ -X -o "StrictHostKeyChecking=no" -o "ProxyCommand $SSH $vzhost run $ct \"(echo `cat ${keyfile}.tmp$$.pub` > /root/.vzsh.tmp$$.pub);sshd -i -o AuthorizedKeysFile=/root/.vzsh.tmp$$.pub;rm /root/.vzsh.tmp$$.pub\"" -l root $ct $ccmd
       rm -f ${keyfile}.tmp$$ ${keyfile}.tmp$$.pub 
     else
-      echo "Container not found."
+      echo "xrun: Container not found."
       exit 1
     fi
-    break;;
-  usage)
-    usage
-    exit
-    break;;
+    ;;
 esac
 
