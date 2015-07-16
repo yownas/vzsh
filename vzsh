@@ -1,5 +1,4 @@
 #!/bin/sh
-# $Id: vzsh,v 1.17 2015/07/16 13:33:55 jonst Exp $
 
 ############################
 # Variables
@@ -13,7 +12,7 @@ statefile=~/.vz/ctstate
 # Variables (Do not edit)
 ############################
 
-SSH="ssh -l root -t -i $keyfile"
+SSH="ssh -l root -t -o PasswordAuthentication=no -i $keyfile"
 vzhosts=`cat $hostfile 2> /dev/null| grep -v ^# | grep . | tr '\012' ' ' `
 
 ############################

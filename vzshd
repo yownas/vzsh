@@ -1,30 +1,10 @@
 #!/bin/sh
-# $Id: vzshd,v 1.12 2015/07/16 12:32:13 jonst Exp $
 
 #
 # This script is supposed to be run by the sshd in the vz-host
 # Users public keys need to be distributed to each vz-host and a vzshd.ini
 # need to be configured to set permissions.
 #
-# Example key in .ssh/authorized_keys
-#
-# command="~/bin/vzshd user=user1" ssh-rsa AAAAB3NzaC1yc2EAAIwAAAQEAyrPGbmPS5gK
-# ztEW+Ja4D0TXrM4X/E3P8D69q+tev0N2JfNn3u++19P1aMywF4CyLUKevTIdajbMqRCArTx8Amgla
-# W2u6Kv2wVeQ== user1-vzsh
-#
-# Example .vz/vzshd.ini file
-#
-# # Groups.
-# # Format: group:user1[[,user2],user3]
-# [groups]
-# wheel:user1
-# 
-# # List of containers. Need to be fqdn of container, * is special
-# # Format: fqdn:user1|@group1[,user2|@group2]
-# [containers]
-# www.local.domain:user2
-# *:@wheel
-
 
 ############################
 # Variables
@@ -181,7 +161,7 @@ case "$action" in
 # Groups
 # group:user1,user2
 [groups]
-wheel:
+wheel:.*
 
 # Containers
 # fqdn|*:user,@group
