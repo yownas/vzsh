@@ -1,18 +1,19 @@
 #!/bin/sh
+# $Id: vzsh,v 1.17 2015/07/16 13:33:55 jonst Exp $
 
 ############################
 # Variables
 ############################
 
 hostfile=~/.vz/hosts
-keyfile=~/.vz/vzsh-key
+keyfile=~/.vz/vzsh-`whoami`-key
 statefile=~/.vz/ctstate
 
 ############################
 # Variables (Do not edit)
 ############################
 
-SSH="ssh -l root -i $keyfile -X"
+SSH="ssh -l root -t -i $keyfile"
 vzhosts=`cat $hostfile | grep -v ^# | grep . | tr '\012' ' ' `
 
 ############################
@@ -25,7 +26,7 @@ vz_athosts() {
   cmd=$1
   for vzhost in $vzhosts;
   do
-    $SSH $vzhost $cmd
+    ($SSH $vzhost $cmd)
   done
 }
 
@@ -33,19 +34,18 @@ vz_athosts() {
 # Get fqdn or cid for container from dns or statefile
 vz_getctname() {
   ct=$1
-  # Try to find container name.
-  if ! [ $ct -ge 0 ] 2>/dev/null; then
-    vz_container=`getent hosts $ct | awk '{print $2}'`
-  fi
-
   # fqdn/cid?
   if [ "$vz_container" == "" ]; then
     # FQDN?
     vz_container=`grep " $ct " $statefile | awk '{print $2}'`
   fi
+  # Try to find container name.
+  if [ "$vz_container" == "" ]; then
+    vz_container=`getent hosts $ct | awk '{print $2}'`
+  fi
 
   if [ "$vz_container" == "" ]; then
-    echo "Can not find container $vz_container"
+    echo "getctname: Can not find container $vz_container"
     exit 1
   fi
 
@@ -66,7 +66,9 @@ vz_gethost() {
 vz_updatestate() {
   [ -f "$statefile" ] && rm -f $statefile
   touch $statefile
-  vz_athosts list >> $statefile
+
+  # No not steal stdin. Get list of containers from all the hosts.
+  echo "" | vz_athosts list >> $statefile 2> /dev/null
 }
 
 # usage
@@ -80,6 +82,8 @@ Usage: $0 ...
 Actions:
 	[-r] container [command]
 		Run command in container.
+	-x container [command]
+		Run command in container with X11 forwarding.
 	-l
 		Show list of all containers.
 	-u
@@ -89,7 +93,9 @@ Actions:
 		distribute your ${keyfile}.pub to all vz-hosts
 		you need to access. Admin also has to update
 		vzshd.ini to give you persmissions.
-	-h
+	-h container [command]
+		Run command on host of container.
+	-?
 		Show this.
 EOF
 }
@@ -102,31 +108,54 @@ EOF
 action=run
 update=true
 
-#goto=ct
-#X11=""
-
-for opt in $@; do
-  case "$opt" in
-    -g) action=genkeys; shift; break;;
-    -h) action=usage; shift; break;;
-    -l) action=list; shift;;
-    -r) action=run; shift; ct=$1; shift; cmd=$*; break;;
-    -u) update=false; shift;;
-#    -x) X11="-X"; shift;;
-    *) ct=$1; shift; cmd=$*; break;;
-  esac
-done
-
-if [ "$action" == "run" -a "$ct" == "" ]; then
-  # Trying to run without host
+if [ -z "$1" ]
+then
   action=usage
+else
+  for opt in $@; do
+    case "$opt" in
+      -g) action=genkeys; shift; break;;
+      -h) action=hostrun; ct=#; shift;;
+      -\?) action=usage; shift; break;;
+      -l) action=list; shift;;
+      -r) action=run; ct=#; shift;;
+      -u) update=false; shift;;
+      -x) action=xrun; ct=#; shift;;
+      *) ct=$1; shift; ccmd=$*; break;;
+    esac
+  done
+
+  # Containername needed but not provided.
+  if [ "$ct" == "#" ]; then
+    action=usage
+  fi
+fi
+
+# Sanity checks
+if [ \! -s "$hostfile" ]
+then
+  usage
+  echo ""
+  echo "ERROR: $hostfile missing or empty."
+  exit 1
+fi
+
+if [ \! -s "$keyfile" -o \! -s "${keyfile}.pub" ]
+then
+  usage
+  echo ""
+  echo "ERROR: $keyfile or ${keyfile}.pub missing or empty."
+  echo "Generate key-pair with: $0 -g"
+  exit 1
 fi
 
 case "$action" in
   genkeys)
     if [ -f "${keyfile}" -o -f "${keyfile}.pub" ]; then
       echo "Keyfiles $keyfile or ${keyfile}.pub exists."
-      echo "Remove before generating."
+      echo "Remove if you want to generate a new one.."
+      echo ""
+      cat ${keyfile}.pub
       exit 1
     fi
     ssh-keygen -q -C vzsh-`whoami` -f $keyfile -N '' && (
@@ -140,15 +169,47 @@ case "$action" in
     break;;
   list)
     [ "$update" == "true" ] && vz_updatestate
-
     cat $statefile
     break;;
-  run)
+  hostrun)
+    [ "$update" == "true" ] && vz_updatestate
+    vz_getctname $ct
+    ct=$vz_return
     vz_gethost $ct
     vzhost=$vz_return
     if [ ! "$vzhost" == "" ]
     then
-      $SSH $vzhost run $ct $cmd
+      $SSH $vzhost hostrun $ccmd
+    else
+      echo "hostrun: Container host not found."
+      exit 1
+    fi
+    break;;
+  run)
+    [ "$update" == "true" ] && vz_updatestate
+    vz_getctname $ct
+    ct=$vz_return
+    vz_gethost $ct
+    vzhost=$vz_return
+    if [ ! "$vzhost" == "" ]
+    then
+      $SSH $vzhost run $ct $ccmd
+    else
+      echo "Container host not found."
+      exit 1
+    fi
+    break;;
+  xrun)
+    [ "$update" == "true" ] && vz_updatestate
+    vz_getctname $ct
+    ct=$vz_return
+    vz_gethost $ct
+    vzhost=$vz_return
+    if [ ! "$vzhost" == "" ]
+    then
+      ssh-keygen -q -f ${keyfile}.tmp$$ -N "" -C vzsh-tmpkey$$ -b 768
+      ssh -i ${keyfile}.tmp$$ -X -o "StrictHostKeyChecking=no" -o "ProxyCommand $SSH $vzhost run $ct \"(echo `cat ${keyfile}.tmp$$.pub` > /root/.vzsh.tmp$$.pub);sshd -i -o AuthorizedKeysFile=/root/.vzsh.tmp$$.pub;rm /root/.vzsh.tmp$$.pub\"" -l root $ct $ccmd
+      rm -f ${keyfile}.tmp$$ ${keyfile}.tmp$$.pub 
     else
       echo "Container not found."
       exit 1
@@ -160,4 +221,3 @@ case "$action" in
     break;;
 esac
 
-#ssh -l root -i ~/.vz/vzsh-key hr-vz1 ls

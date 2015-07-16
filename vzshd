@@ -1,4 +1,5 @@
 #!/bin/sh
+# $Id: vzshd,v 1.12 2015/07/16 12:32:13 jonst Exp $
 
 #
 # This script is supposed to be run by the sshd in the vz-host
@@ -7,21 +8,21 @@
 #
 # Example key in .ssh/authorized_keys
 #
-# command="~/bin/vzshd user=yownas" ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAyrPGbmPS5gK
-# dRt8LjG3lS60gLVBlLu+yq98bHoEmGeZUW8UyxTfPdDAo27PoblzzTdjBqxccw7Jg48ayzllQkvCJjTK
-# W2u6Kv2wVeQ== yownas-vzsh
+# command="~/bin/vzshd user=user1" ssh-rsa AAAAB3NzaC1yc2EAAIwAAAQEAyrPGbmPS5gK
+# ztEW+Ja4D0TXrM4X/E3P8D69q+tev0N2JfNn3u++19P1aMywF4CyLUKevTIdajbMqRCArTx8Amgla
+# W2u6Kv2wVeQ== user1-vzsh
 #
 # Example .vz/vzshd.ini file
 #
 # # Groups.
 # # Format: group:user1[[,user2],user3]
 # [groups]
-# wheel:urbblo
+# wheel:user1
 # 
 # # List of containers. Need to be fqdn of container, * is special
 # # Format: fqdn:user1|@group1[,user2|@group2]
-# [vzcts]
-# www.local.domain:yownas
+# [containers]
+# www.local.domain:user2
 # *:@wheel
 
 
@@ -42,12 +43,67 @@ VZ shell daemon
 Usage: $0 ...
 
 Actions:
-        list
-                Show list of all containers.
-	run ct [command]
-		Run command in container.
+
+Commandline:
+  init
+    Generate $vzshdini template.
+
+From vzsh:
+  list
+    Show list of all containers.
+
+  hostrun [command]
+    Run command on local host.
+
+  run ct [command]
+    Run command in container.
 EOF
 }
+
+# vz_runas user ct
+# Check which user to run as in ct
+vz_runas() {
+  export tmp_user=$1
+  export tmp_ct=$2
+
+  # Create search-string from ini-file
+  searchuser_str=`
+    # Get all non-coment lines
+    grep -v "^#" $vzshdini | \
+
+    # Print lines under [groups]
+    awk '/^\[/{p=0}/^\[groups\]$/{p=1}{if(p)print "@"$0","}' | \
+    egrep -v '^\[|^,$' | \
+
+    # Grep for current user
+    grep "[:,]$tmp_user," | \
+
+    # Make search-string from groups and user.
+    awk -F: '{printf "^"$1"=.*$|"}END{print "^"ENVIRON["tmp_user"]".*$"}'`
+
+  vz_return=`
+    # Search the containers for user/group return user to run as
+    grep -v "^#" $vzshdini | \
+
+    # Print lines under [containers]
+    awk '/^\[/{p=0}/^\[containers\]$/{p=1}{if(p)print $0}' | \
+    egrep -v '^\[|^$' | \
+
+    # Get container or *
+    egrep "^$tmp_ct:|^\*:" | \
+
+    # Get the list of all users/groups
+    cut -d: -f2|tr , '\012' | \
+
+    # Try to find user or users groups
+    egrep $searchuser_str | \
+
+    # Only parse lines where there is a runas-user set
+    grep = | cut -d= -f2`
+
+  [ "$vz_return" == "" ] && vz_return="root"
+}
+
 
 # vz_checkperm user ct
 # Check persmissions for user
@@ -57,18 +113,32 @@ vz_checkperm() {
   vz_return=noperm
 
   # I'm so sorry for this... /Jonas
-  grep -v "^#" $vzshdini|awk '/^\[/{p=0}/^\[vzcts\]$/{p=1}{if(p)print $0}'|egrep -v '^\[|^$'|egrep "^$tmp_ct:|^\*:"|cut -d: -f2|tr , '\012'|egrep `grep -v "^#" $vzshdini|awk '/^\[/{p=0}/^\[groups\]$/{p=1}{if(p)print "@"$0","}'|egrep -v '^\[|^,$'|grep "[:,]$tmp_user,"|awk -F: '{printf "^"$1"$|"}END{print "^"ENVIRON["tmp_user"]"$"}'` > /dev/null && vz_return=allowed
+  (grep -v "^#" $vzshdini|awk '/^\[/{p=0}/^\[containers\]$/{p=1}{if(p)print $0}'|egrep -v '^\[|^$'|egrep "^$tmp_ct:|^\*:"|cut -d: -f2|tr , '\012'|sed 's/=.*$//'|egrep `grep -v "^#" $vzshdini|awk '/^\[/{p=0}/^\[groups\]$/{p=1}{if(p)print "@"$0","}'|egrep -v '^\[|^,$'|grep "[:,]$tmp_user,"|awk -F: '{printf "^"$1"$|"}END{print "^"ENVIRON["tmp_user"]"$"}'` > /dev/null) && vz_return=allowed
 
   # The line above checks .vz/vzshd.ini and sets vz_return to allowed
   # if the user or a group the user belong to has access to a container.
 }
 
+# vz_checkperm_host user
+# Check persmissions for user
+vz_checkperm_host() {
+  export tmp_user=$1
+  vz_return=noperm
+
+  # Again... I'm so sorry for this... /Jonas
+  grep -v "^#" $vzshdini|awk '/^\[/{p=0}/^\[hosts\]$/{p=1}{if(p)print $0}'|egrep -v '^\[|^$'|egrep "^`hostname`:|^localhost:"|cut -d: -f2|tr , '\012'|egrep `grep -v "^#" $vzshdini|awk '/^\[/{p=0}/^\[groups\]$/{p=1}{if(p)print "@"$0","}'|egrep -v '^\[|^,$'|grep "[:,]$tmp_user,"|awk -F: '{printf "^"$1"$|"}END{print "^"ENVIRON["tmp_user"]"$"}'` > /dev/null && vz_return=allowed
+
+  # The line above checks .vz/vzshd.ini and sets vz_return to allowed
+  # if the user or a group the user belong to has access to the local host.
+}
+
 # vz_parse options ...
-# Parse arguments from ssh-key
+# Parse arguments from ssh-key or commandline
 vz_parse_arg() {
   for opt in $*; do
     case "$opt" in
-      user=*) user=`echo $1 | sed 's/user=//'`; shift;;
+      init) action=init; shift;;
+      user=*) user=${1#user=}; shift;;
       --) shift; break;;
     esac
   done
@@ -80,6 +150,7 @@ vz_parse() {
   for opt in $*; do
     case "$opt" in
       list) action=list; shift;;
+      hostrun) action=hostrun; shift; ccmd=$*; break;;
       run) action=run; shift; ct=$1; shift; ccmd=$*; break;;
       --) shift; break;;
     esac
@@ -102,10 +173,56 @@ vz_parse_arg $*
 vz_parse $SSH_ORIGINAL_COMMAND
 
 case "$action" in
+  init)
+    if [ \! -f "$vzshdini" ]
+    then
+      mkdir -p ${vzshdini%/[^/]*}
+      cat > $vzshdini <<EOF
+# Groups
+# group:user1,user2
+[groups]
+wheel:
+
+# Containers
+# fqdn|*:user,@group
+[containers]
+*:@wheel
+
+# OpenVZ hosts
+# fqdn|localhost:user,@group
+[hosts]
+localhost:@wheel
+
+EOF
+      echo "Template $vzshdini created."
+      exit 1
+    else
+      echo "$vzshdini exists, will not overwrite."
+      exit 1
+    fi
+    break;;
+
   list)
-    vzlist -Hat -o hostname,ctid,status | sed "s/^/`hostname`\t/"
+    (vzlist -Hat -o hostname,ctid,status | sed "s/^/`hostname`\t/")
+    break;;
+  hostrun)
+    # Run command/start shell on host.
+    vz_checkperm_host $user
+    if [ "$vz_return" == "allowed" ]
+    then
+      if [ "$ccmd" == "" ]
+      then
+        /bin/bash -i
+      else
+        $ccmd
+      fi
+    else
+      echo "$0: permission denied for $user@host" 
+      exit 1
+    fi
     break;;
   run)
+    # Run command/start shell in container.
     # Check if user has access to container
     vz_checkperm $user $ct
     if [ "$vz_return" == "allowed" ]
@@ -116,7 +233,24 @@ case "$action" in
       then
         ctlcmd=exec;
       fi
+
+      vz_runas $user $ct
+      if [ \! "$vz_return" == "root" ]; then
+
+        # Force /bin/bash if empty
+        if [ "$ccmd" == "" ]
+        then
+          ccmd="/bin/bash -i";
+        fi
+        ccmd="su - $vz_return -- -c \"$ccmd\""
+
+        # We need exec to run su
+        ctlcmd=exec;
+
+      fi
+
       vzctl --quiet $ctlcmd $ct $ccmd
+
     else
       echo "$0: permission denied for $user@$ct" 
       exit 1
