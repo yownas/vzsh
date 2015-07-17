@@ -63,7 +63,6 @@ vz_movect() {
   else
     live=""
   fi
-  echo vzmigrate --ssh="-o BatchMode=yes -o StrictHostKeyChecking=no" --remove-area no --keep-dst $live $otherhost $ct
   vzmigrate --ssh="-o BatchMode=yes -o StrictHostKeyChecking=no" --remove-area no --keep-dst $live $otherhost $ct
 }
 
