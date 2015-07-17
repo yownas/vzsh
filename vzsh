@@ -101,6 +101,8 @@ Actions:
 		distribute your ${keyfile}.pub to all vz-hosts
 		you need to access. Admin also has to update
 		vzshd.ini to give you persmissions.
+		Suffix is used to let you use different keys for different
+		hosts or permissions.
 	-t
 		Create folder and empty hostfile-template, implies -g.
 	-h container [command]
