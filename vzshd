@@ -29,14 +29,21 @@ Commandline:
     Generate $vzshdini template.
 
 From vzsh:
-  list
-    Show list of all containers.
-
   hostrun [command]
     Run command on local host.
 
+  list
+    Show list of all containers.
+
+  move ct host
+    Move container to another host.
+
   run ct [command]
     Run command in container.
+
+  start ct
+  stop ct
+    Start or stop a container.
 EOF
 }
 
@@ -99,6 +106,21 @@ vz_checkperm() {
   # if the user or a group the user belong to has access to a container.
 }
 
+# vz_checkmanager user permission
+# Check manager persmissions for user
+vz_checkmanager() {
+  export tmp_user=$1
+  export tmp_perm=$2
+  vz_return=noperm
+
+  # I'm so sorry for this... /Jonas
+  (grep -v "^#" $vzshdini|awk '/^\[/{p=0}/^\[manager\]$/{p=1}{if(p)print $0}'|egrep -v '^\[|^$'|egrep "^$tmp_perm:"|cut -d: -f2|tr , '\012'|egrep `grep -v "^#" $vzshdini|awk '/^\[/{p=0}/^\[groups\]$/{p=1}{if(p)print "@"$0","}'|egrep -v '^\[|^,$'|grep "[:,]$tmp_user,"|awk -F: '{printf "^"$1"$|"}END{print "^"ENVIRON["tmp_user"]"$"}'` > /dev/null) && vz_return=allowed
+
+  # The line above checks .vz/vzshd.ini and sets vz_return to allowed
+  # if the user or a group the user belong to has access to a container.
+}
+
+
 # vz_checkperm_host user
 # Check persmissions for user
 vz_checkperm_host() {
@@ -129,9 +151,12 @@ vz_parse_arg() {
 vz_parse() {
   for opt in $*; do
     case "$opt" in
-      list) action=list; shift;;
       hostrun) action=hostrun; shift; ccmd=$*; break;;
+      list) action=list; shift;;
+      move) action=move; shift; ct=$1; shift; otherhost=$1; break;;
       run) action=run; shift; ct=$1; shift; ccmd=$*; break;;
+      start) action=start; shift; ct=$1; break;;
+      stop) action=stop; shift; ct=$1; break;;
       --) shift; break;;
     esac
   done
@@ -153,6 +178,22 @@ vz_parse_arg $*
 vz_parse $SSH_ORIGINAL_COMMAND
 
 case "$action" in
+  hostrun)
+    # Run command/start shell on host.
+    vz_checkperm_host $user
+    if [ "$vz_return" == "allowed" ]
+    then
+      if [ "$ccmd" == "" ]
+      then
+        /bin/bash -i
+      else
+        $ccmd
+      fi
+    else
+      echo "$0: permission denied for $user@localhost" 
+      exit 1
+    fi
+    break;;
   init)
     if [ \! -f "$vzshdini" ]
     then
@@ -161,7 +202,7 @@ case "$action" in
 # Groups
 # group:user1,user2
 [groups]
-wheel:.*
+wheel:
 
 # Containers
 # fqdn|*:user,@group
@@ -185,22 +226,25 @@ EOF
   list)
     (vzlist -Hat -o hostname,ctid,status | sed "s/^/`hostname`\t/")
     break;;
-  hostrun)
-    # Run command/start shell on host.
-    vz_checkperm_host $user
+
+  move)
+    vz_checkmanager $user move
     if [ "$vz_return" == "allowed" ]
     then
-      if [ "$ccmd" == "" ]
+      live=`vzlist -Hat | grep " ${ct}\$" | awk '{print $4}'`
+      if [ "$live" == "running" ]
       then
-        /bin/bash -i
+        live="--live"
       else
-        $ccmd
+        live=""
       fi
+      vzmigrate --ssh="-o BatchMode=yes -o StrictHostKeyChecking=no" --remove-area no --keep-dst $live $otherhost $ct
     else
-      echo "$0: permission denied for $user@host" 
+      echo "$0: move denied for $user" 
       exit 1
     fi
     break;;
+
   run)
     # Run command/start shell in container.
     # Check if user has access to container
@@ -236,6 +280,29 @@ EOF
       exit 1
     fi
     break;;
+
+  start)
+    vz_checkmanager $user startstop
+    if [ "$vz_return" == "allowed" ]
+    then
+      vzctl start $ct
+    else
+      echo "$0: start $ct denied for $user" 
+      exit 1
+    fi
+    break;;
+
+  stop)
+    vz_checkmanager $user startstop
+    if [ "$vz_return" == "allowed" ]
+    then
+      vzctl stop $ct
+    else
+      echo "$0: stop $ct denied for $user" 
+      exit 1
+    fi
+    break;;
+
   usage)
     usage
     exit

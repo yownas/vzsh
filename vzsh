@@ -90,6 +90,12 @@ Actions:
 		Run command/shell in container with X11 forwarding.
 	-l
 		Show list of all containers on all hosts.
+	-m move container host
+		Move container to host.
+	-m start container
+		Start container
+	-m stop container
+		Stop container
 	-g [suffix]
 		Generate ssh-keyspairs. After keys been generated
 		distribute your ${keyfile}.pub to all vz-hosts
@@ -126,6 +132,7 @@ else
       -\?) action=usage; needconf=no; shift; break;;
       -k) shift; keysuffix=$1; shift;;
       -l) action=list; shift;;
+      -m) action=manage; shift; ccmd=$1; shift; ct=$1; shift; otherhosts=$*; shift; break;;
       -r) action=run; shift; ct=$1; shift; ccmd=$*; break;;
       -t) action=template; needconf=no; shift;;
       -u) update=false; shift;;
@@ -205,6 +212,30 @@ case "$action" in
   list)
     [ "$update" == "true" ] && vz_updatestate
     cat $statefile
+    ;;
+  manage)
+    [ "$update" == "true" ] && vz_updatestate
+    case "$ccmd" in
+      # move, start & stop have similar arguments.
+      # Treat them all the same way.
+      move|start|stop)
+        vz_getctname $ct
+        ct=$vz_return
+        vz_gethost $ct
+        vzhost=$vz_return
+        if [ ! "$vzhost" == "" ]
+        then
+          $SSH $vzhost $ccmd $ct $otherhosts
+        else
+          echo "manage: Container host not found."
+          exit 1
+        fi
+        ;;
+      *)
+        echo "manage: Unknown command: $ccmd"
+        exit 1
+        ;;
+    esac
     ;;
   run)
     [ "$update" == "true" ] && vz_updatestate
