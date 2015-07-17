@@ -38,6 +38,9 @@ From vzsh:
   move ct host
     Move container to another host.
 
+  moveall host [host]
+    Move all containers to other hosts.
+
   run ct [command]
     Run command in container.
 
@@ -45,6 +48,23 @@ From vzsh:
   stop ct
     Start or stop a container.
 EOF
+}
+
+# vz_movect ct host
+# Try to move a container to another host
+vz_movect() {
+  ct=$1
+  otherhost=$2
+
+  live=`vzlist -Hat | grep " ${ct}\$" | awk '{print $3}'`
+  if [ "$live" == "running" ]
+  then
+    live="--live"
+  else
+    live=""
+  fi
+  echo vzmigrate --ssh="-o BatchMode=yes -o StrictHostKeyChecking=no" --remove-area no --keep-dst $live $otherhost $ct
+  vzmigrate --ssh="-o BatchMode=yes -o StrictHostKeyChecking=no" --remove-area no --keep-dst $live $otherhost $ct
 }
 
 # vz_runas user ct
@@ -226,6 +246,7 @@ vz_parse() {
       hostrun) action=hostrun; shift; ccmd=$*; break;;
       list) action=list; shift;;
       move) action=move; shift; ct=$1; shift; otherhost=$1; break;;
+      moveall) action=moveall; shift; otherhosts=$*; break;;
       run) action=run; shift; ct=$1; shift; ccmd=$*; break;;
       start) action=start; shift; ct=$1; break;;
       stop) action=stop; shift; ct=$1; break;;
@@ -303,20 +324,30 @@ EOF
     vz_checkmanager $user move
     if [ "$vz_return" == "allowed" ]
     then
-      live=`vzlist -Hat | grep " ${ct}\$" | awk '{print $4}'`
-      if [ "$live" == "running" ]
-      then
-        live="--live"
-      else
-        live=""
-      fi
-      vzmigrate --ssh="-o BatchMode=yes -o StrictHostKeyChecking=no" --remove-area no --keep-dst $live $otherhost $ct
+      vz_movect $ct $otherhost
     else
       echo "$0: move denied for $user" 
       exit 1
     fi
     break;;
 
+  moveall)
+    vz_checkmanager $user move
+    if [ "$vz_return" == "allowed" ]
+    then
+      hosts=$otherhosts
+      for ct in `vzlist -Hat | awk '{print $5}'`
+      do
+        moveto=`echo $hosts | awk '{print $1}'`
+        hosts=`echo $hosts" " | sed 's/^[^ ]* //;s/ $//'`
+        [ -z "$hosts" ] && hosts=$otherhosts
+        vz_movect $ct $moveto
+      done
+    else
+      echo "$0: moveall denied for $user" 
+      exit 1
+    fi
+    ;;
   run)
     # Run command/start shell in container.
     # Check if user has access to container

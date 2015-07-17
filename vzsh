@@ -92,6 +92,8 @@ Actions:
 		Show list of all containers on all hosts.
 	-m move container host
 		Move container to host.
+	-m moveall host1 host2 [host3]
+		Move all containers from host1 to host2 [and host3]
 	-m start container
 		Start container
 	-m stop container
@@ -101,8 +103,6 @@ Actions:
 		distribute your ${keyfile}.pub to all vz-hosts
 		you need to access. Admin also has to update
 		vzshd.ini to give you persmissions.
-		Suffix is used to let you use different keys for different
-		hosts or permissions.
 	-t
 		Create folder and empty hostfile-template, implies -g.
 	-h container [command]
@@ -232,6 +232,10 @@ case "$action" in
           echo "manage: Container host not found."
           exit 1
         fi
+        ;;
+      moveall)
+        vzhost=$ct
+        $SSH $vzhost $ccmd $otherhosts
         ;;
       *)
         echo "manage: Unknown command: $ccmd"
