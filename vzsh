@@ -12,7 +12,8 @@ statefile=~/.vz/ctstate
 # Variables (Do not edit)
 ############################
 
-vzhosts=`cat $hostfile 2> /dev/null| grep -v ^# | grep . | tr '\012' ' ' `
+#vzhosts=`cat $hostfile 2> /dev/null| grep -v ^# | grep . | tr '\012' ' ' `
+vzhosts=`cat $hostfile 2> /dev/null| awk '/^[^#]/{print $1}' | tr '\012' ' ' `
 
 ############################
 # Functions
@@ -33,17 +34,15 @@ vz_athosts() {
 vz_getctname() {
   ct=$1
   # fqdn/cid?
-  if [ "$vz_container" == "" ]; then
-    # FQDN?
-    vz_container=`grep " $ct " $statefile | awk '{print $2}'`
-  fi
+  vz_container=`grep " $ct " $statefile | awk '{print $2}'`
+
   # Try to find container name.
   if [ "$vz_container" == "" ]; then
     vz_container=`getent hosts $ct | awk '{print $2}'`
   fi
 
   if [ "$vz_container" == "" ]; then
-    echo "getctname: Can not find container $vz_container"
+    echo "getctname: Can not find container $ct"
     exit 1
   fi
 
@@ -66,7 +65,7 @@ vz_updatestate() {
   touch $statefile
 
   # No not steal stdin. Get list of containers from all the hosts.
-  echo "" | vz_athosts list >> $statefile 2> /dev/null
+  echo "" | vz_athosts list 2> /dev/null | tr '\t' ' ' >> $statefile
 }
 
 # usage
@@ -149,7 +148,7 @@ fi
 keyfile=`echo $keyfile | sed "s/SUFFIX/${keysuffix}/"`
 
 # Set ssh-command to use now when we know which key to use.
-SSH="ssh -l root -t -o PasswordAuthentication=no -i $keyfile"
+SSH="ssh -l root -t -o PasswordAuthentication=no -o ConnectTimeout=3 -i $keyfile"
 
 if [ "$needconf" == "yes" ]
 then
