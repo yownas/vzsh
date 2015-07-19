@@ -48,7 +48,7 @@ Example ~root/.vz/vzshd.ini:
     move:@managers
     startstop:@managers
 
-user1 has access to any container while user2 only have access to www.example.com. @wheel and user3 are allowed to get a shell on the local host. Only the group "managers" are allowed to start and stop containers and move them to other hosts. user1 is a member of  managers but has to use a special key with "admin" as suffix.
+user1 has access to any container, as the group @wheel, while user2 only have access to www.example.com. @wheel and user3 are allowed to get a shell on the local host. Only the group "managers" are allowed to start and stop containers and move them to other hosts. user1 is a member of  managers but has to use a special key with "admin" as suffix.
 
 In ~root/.ssh/authorized_keys you need to add the public keys generated in the step above.
 
