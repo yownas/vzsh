@@ -128,12 +128,25 @@ then
 else
   while [ \! -z "$*" ]; do
     case "$1" in
-      -g) action=genkeys; shift; keysuffix=$1; needconf=no; shift; break;;
+      -g)
+        action=genkeys;
+        shift;
+        [ -z "$keysuffix" ] && keysuffix=$1;
+        needconf=no;
+        break;;
       -h) action=hostrun; shift; ct=$1; shift; ccmd=$*; shift $#; break;;
       -\?) action=usage; needconf=no; shift; break;;
       -k) shift; keysuffix=$1; shift;;
       -l) action=list; shift;;
-      -m) action=manage; shift; ccmd=$1; shift; ct=$1; shift; otherhosts=$*; shift; break;;
+      -m)
+        action=manage;
+        shift;
+        ccmd=$1;
+        shift;
+        ct=$1;
+        shift;
+        otherhosts=$*;
+        break;;
       -r) action=run; shift; ct=$1; shift; ccmd=$*; break;;
       -t) action=template; needconf=no; shift;;
       -u) update=false; shift;;
