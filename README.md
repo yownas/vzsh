@@ -22,11 +22,10 @@ vzshd is used on the host as a "server". vzsh doesn't get root-shell access to t
 Copy vzsh somewhere where admin-users will have access to it. Users then need to create a folder ~/.vz/ where they put a file ~/.vz/hosts that contains a list of OpenVZ hosts. One per line, comments with # are allowed and anything written after the first word is treated as a comment.
 
 ~/.vz/hosts
-<code>
-# This is a comment
-this.is.a.host  Also a comment.
-another.host
-</code>
+
+    # This is a comment
+    this.is.a.host  Also a comment.
+    another.host
 
 Then create a ssh-key-pair with vzsh -g and distribute it to all hosts you are supposed to have access to.
 
@@ -34,22 +33,22 @@ In the OpenVZ hosts you need to place vzshd in ~root/bin/vzshd and create an ini
 
 Example ~root/.vz/vzshd.ini:
 
-<code>
-[groups]
-wheel:user1
-managers:user1_admin
+    [groups]
+    wheel:user1
+    managers:user1_admin
+    
+    [containers]
+    www.example.com:user2
+    *:@wheel
 
-[containers]
-www.example.com:user2
-*:@wheel
+    [hosts]
+    localhost:@wheel, user3
+    
+    [manager]
+    move:@managers
+    startstop:@managers
 
-[manager]
-move:@managers
-startstop:@managers
-</code>
-
-user1 has access to any container while user2 only have access to www.example.com.
-Only the group "managers" are allowed to start and stop containers and move them to other hosts. user1 is a member of  managers but has to use a special key with "admin" as suffix.
+user1 has access to any container while user2 only have access to www.example.com. @wheel and user3 are allowed to get a shell on the local host. Only the group "managers" are allowed to start and stop containers and move them to other hosts. user1 is a member of  managers but has to use a special key with "admin" as suffix.
 
 In ~root/.ssh/authorized_keys you need to add the public keys generated in the step above.
 
