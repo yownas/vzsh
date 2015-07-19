@@ -102,9 +102,11 @@ Example key:
 command="~/bin/vzshd user=yownas" ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCvnBflmZrFValum2bW/hSvzt2WihNjXLMoIjkXaGbc994gxxssQg0/7FdtRboWkvOO4ytJSn2JBXzMpjq3jxc1FOTiZ3GgMO5Odv76+plLVUFtX0wG8Kycye9/wcRHK8Jy6TG4/AdVjpFTudWIK5GOpx28gueKDy1KhBFhEFf2DITOSjwKiUTgmPddADB3itbkBmAi1gJXed6XUjFrWeJCZTc0Swsn4OrMfK34uCtQ9j3fy16de42Uh0/dHt43HAuyCV+A7HT+/WtVagGjuorFD2f1wUt7V0FVXvhyyiotTWpIpnfouPTDfPOzwXF+fHS4lfpFepBzUNBEl4YsaUCp vzsh-yownas-user
 ```
 
+When added to ~root/.ssh/authorized_keys on the host it will allow you to login as root but not give you a shell, instead it will run ~/bin/vzshd regardless of which command you told it to run. Is this super-secure and hacker resistant? No, and yes. No, the vzshd is just a shell script and I would be surprised if there wasn't some way to trick it to execute any command. On the other hand, only people with ssh-keys added are able to execute the script. As long as only administrators have keys and keep them safe you are ok....well, ok-ish. If you need super-security, let the non-admins play with their own cluster of servers.
+
 When you've done that, add hosts to your ~/.vz/hosts file and you are done.
 
-    -l (list containers)
+    -l
 
 Simply list all containers on all hosts. (That you have access to.)
 
@@ -117,8 +119,6 @@ Run a command in the container or get a root-shell. (-r is not needed) What the 
 Get a shell or run a command with X11 forwarding. This is a bit more complicated. It doesn't run ssh directly. Instead it logs in as above, starts a sshd with -i so it sends data via stdin/stdout rather than over the network and then connects to it, allowing for X11 forwarding.
 
 Basically you are tunneling X11 over the text-only console 'vzctl exec' give you. The advantage of doing it like this instead of using ssh directly to the container is that you do not need to have access to the network the container runs in (only the host). Sshd doesn't need to run and you don't need to know the root-password or have any keys installed.
-
-When added to ~root/.ssh/authorized_keys on the host it will allow you to login as root but not give you a shell, instead it will run ~/bin/vzshd regardless of which command you told it to run. Is this super-secure and hacker resistant? No, and yes. No, the vzshd is just a shell script and I would be surprised if there wasn't some way to trick it to execute any command. On the other hand, only people with ssh-keys added are able to execute the script. As long as only administrators have keys and keep them safe you are ok....well, ok-ish. If you need super-security, let the non-admins play with their own cluster of servers.
 
     -h container [command]
 
@@ -144,7 +144,7 @@ Move all containers on host1 to newhost2 (and newhost3) in a round-robin fashion
     -m start container
     -m stop container
 
-Start or stop the container. I leave it as a challange to the reader to figure out which one does what.
+Start or stop the container. I leave it as a challenge to the reader to figure out which one does what.
 
     -u
 
@@ -164,7 +164,6 @@ Using your admin-key, login on the host running testct.example.com and remove it
     echo "This is a nameserver." | vzsh -u ns2.mydomain 'cat > /etc/motd'
 
 Put "This is a nameserver." in /etc/motd on ns1 and ns2. The second time we assume that ns2 hasn't moved and use -u to speed things up.
-
 
 
 ## Copyright
