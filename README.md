@@ -1,6 +1,6 @@
 # vzsh
 
-## Why?
+## Introduction
 
 This is a small script to help you log into your OpenVZ containers.
 
@@ -11,7 +11,7 @@ I realize this isn't for everyone but it solves a couple of problems you would r
 
 For example, you have your hosts in your secure admin-network. In the user-network there are a bunch of mad scientists that will try to hack into any dns/mail/syslog-server you might set up. Also, they will intercept ssh and crack any password you might leave in /etc/shadow in the containters they need to log into for their research.
 
-## How?
+## How it works
 
 vzsh is what admins will use to access the containers. It does this by first going through a list of hosts to find which one contains your container. Then ssh to the host and use "vzctl enter" or "vzctl exec" to get a shell. By doing this you don't need to use ssh to the container, sshd can even be disabled and root have a * in /etc/shadow.
 
@@ -25,13 +25,24 @@ In the OpenVZ hosts you need to place vzshd in ~root/bin/vzshd and create an ini
 
 Example ~root/.vz/vzshd.ini:
 
-    [groups]
-    wheel:user1
-      
-    [vzcts]
-    www.example.com:user2
-    *:@wheel
+<code>
+[groups]
+wheel:user1
+managers:user1_admin
+
+[containers]
+www.example.com:user2
+*:@wheel
+
+[manager]
+move:@managers
+startstop:@managers
+</code>
 
 In ~root/.ssh/authorized_keys you need to add the public keys generated in the step above.
 
 If permissions are correct everything should be up and running now. (Probably not. Since this is still in early development.)
+
+## Copyright
+
+License: [LICENSE]
