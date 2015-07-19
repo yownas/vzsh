@@ -165,6 +165,9 @@ Using your admin-key, login on the host running testct.example.com and remove it
 
 Put "This is a nameserver." in /etc/motd on ns1 and ns2. The second time we assume that ns2 hasn't moved and use -u to speed things up.
 
+    rsync -va --rsh=vzsh mycontainer.mydomain:/root ~/backup
+
+Use rsync to make a backup of root home-folder in mycontainer.
 
 ## Copyright
 
