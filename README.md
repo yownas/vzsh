@@ -19,7 +19,16 @@ vzshd is used on the host as a "server". vzsh doesn't get root-shell access to t
 
 ## Installation
 
-Copy vzsh somewhere where admin-users will have access to it. Users then need to create a folder ~/.vz/ where they put a file ~/.vz/hosts that contains a list of OpenVZ hosts. One per line, comments with # are allowed. Then create a ssh-key-pair with vzsh -g.
+Copy vzsh somewhere where admin-users will have access to it. Users then need to create a folder ~/.vz/ where they put a file ~/.vz/hosts that contains a list of OpenVZ hosts. One per line, comments with # are allowed and anything written after the first word is treated as a comment.
+
+~/.vz/hosts
+<code>
+# This is a comment
+this.is.a.host  Also a comment.
+another.host
+</code>
+
+Then create a ssh-key-pair with vzsh -g and distribute it to all hosts you are supposed to have access to.
 
 In the OpenVZ hosts you need to place vzshd in ~root/bin/vzshd and create an ini-file, ~root/.vz/vzshd.ini that controlls who can log in.
 
@@ -39,10 +48,13 @@ move:@managers
 startstop:@managers
 </code>
 
+user1 has access to any container while user2 only have access to www.example.com.
+Only the group "managers" are allowed to start and stop containers and move them to other hosts. user1 is a member of  managers but has to use a special key with "admin" as suffix.
+
 In ~root/.ssh/authorized_keys you need to add the public keys generated in the step above.
 
 If permissions are correct everything should be up and running now. (Probably not. Since this is still in early development.)
 
 ## Copyright
 
-License: [LICENSE]
+License: [The MIT License (MIT)](LICENSE)
