@@ -137,9 +137,9 @@ This will run different management command.
 
 Move a container to a new host.
 
-    -m moveall host host1 [newhost2 [newhost3]
+    -m moveall oldhost newhost1 [newhost2 [newhost3]
 
-Move all containers on host1 to newhost2 (and newhost3) in a round-robin fashion. This could be used to empty a host if you need to do maintainance.
+Move all containers on oldhost to newhost1 (and newhost2 (and newhost3)) in a round-robin fashion. This could be used to empty a host if you need to do maintainance.
 
     -m start container
     -m stop container
