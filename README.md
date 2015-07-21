@@ -169,6 +169,17 @@ Put "This is a nameserver." in /etc/motd on ns1 and ns2. The second time we assu
 
 Use rsync to make a backup of root home-folder in mycontainer.
 
+## Work In Progress
+
+You are able to force users to run commands as a user rather than root in containers. If you add an entry like this user2 will be able to get a shell in the container banana as the user ctuser (not root).
+
+''''
+[containers]
+banana:user2=ctuser
+''''
+
+This, kind of, works at the moment. Still trying to figure out how to get a tty for the shell even if su removes it. And X11 forwarding is very broken if you try to run as anything else than root.
+
 ## Copyright
 
 License: [The MIT License (MIT)](LICENSE)
