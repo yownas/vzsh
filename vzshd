@@ -357,7 +357,7 @@ EOF
       ctlcmd=enter;
       if [ \! "$ccmd" == "" ]
       then
-        ctlcmd=exec;
+        ctlcmd="exec";
       fi
 
       vz_runas $user $ct
@@ -366,13 +366,15 @@ EOF
         # Force /bin/bash if empty
         if [ "$ccmd" == "" ]
         then
-          ccmd="/bin/bash -i";
+          # "enter" will give you a tty but this will
+          # also echo the 'su' command.
+          # Ugly, but it works.
+          ccmd="--exec exec su - $vz_return"
+          ctlcmd="enter";
+        else
+          ccmd="su - $vz_return -- -c \"$ccmd\""
+          ctlcmd="exec";
         fi
-        ccmd="su - $vz_return -- -c \"$ccmd\""
-
-        # We need exec to run su
-        ctlcmd=exec;
-
       fi
 
       vzctl --quiet $ctlcmd $ct $ccmd
