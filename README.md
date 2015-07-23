@@ -36,19 +36,25 @@ Example ~root/.vz/vzshd.ini:
     [groups]
     wheel:user1
     managers:user1_admin
+    logadmins:alice,bob
     
     [containers]
     www.example.com:user2
+    syslog.local.domain:@logadmins=loguser
     *:@wheel
 
     [hosts]
-    localhost:@wheel, user3
+    localhost:@wheel,user3
     
     [manager]
     move:@managers
     startstop:@managers
 
-user1 has access to any container, as the group @wheel, while user2 only have access to www.example.com. @wheel and user3 are allowed to get a shell on the local host. Only the group "managers" are allowed to start and stop containers and move them to other hosts. user1 is a member of  managers but has to use a special key with "admin" as suffix.
+user1 has access to any container, as the group @wheel, while user2 only have access to www.example.com.
+
+Alice and Bob are members of the logadmins-group and are able to access the container syslog.local.domain, but only as loguser, not root.
+
+@wheel and user3 are allowed to get a shell on the local OpenVZ host. Only the group "managers" are allowed to start and stop containers and move them to other hosts. user1 is a member of  managers but has to use a special key with "admin" as suffix.
 
 In ~root/.ssh/authorized_keys you need to add the public keys generated in the step above.
 
@@ -168,17 +174,6 @@ Put "This is a nameserver." in /etc/motd on ns1 and ns2. The second time we assu
     rsync -va --rsh=vzsh mycontainer.mydomain:/root ~/backup
 
 Use rsync to make a backup of root home-folder in mycontainer.
-
-## Work In Progress
-
-You are able to force users to run commands as a user rather than root in containers. If you add an entry like this user2 will be able to get a shell in the container banana as the user ctuser (not root).
-
-
-    [containers]
-    banana:user2=ctuser
-
-
-This, kind of, works at the moment. Still trying to figure out how to get a tty for the shell even if su removes it. And X11 forwarding is very broken if you try to run as anything else than root.
 
 ## Copyright
 
