@@ -99,9 +99,9 @@ Actions:
 		Stop container
 	-g [suffix]
 		Generate ssh-keyspairs. After keys been generated
-		distribute your ${keyfile}.pub to all vz-hosts
-		you need to access. Admin also has to update
-		vzshd.ini to give you persmissions.
+		distribute your ${keyfile}.pub
+                to all vz-hosts you need to access. Admin also has to
+                update vzshd.ini to give you persmissions.
 	-t
 		Create folder and empty hostfile-template, implies -g.
 	-h container [command]
@@ -298,7 +298,7 @@ EOF
     if [ ! "$vzhost" == "" ]
     then
       ssh-keygen -q -f ${keyfile}.tmp$$ -N "" -C vzsh-tmpkey$$ -b 768
-      ssh -i ${keyfile}.tmp$$ -X -o "StrictHostKeyChecking=no" -o "ProxyCommand $SSH $vzhost run $ct \"(echo `cat ${keyfile}.tmp$$.pub` > /root/.vzsh.tmp$$.pub);sshd -i -o AuthorizedKeysFile=/root/.vzsh.tmp$$.pub;rm /root/.vzsh.tmp$$.pub\"" -l root $ct $ccmd
+      ssh -i ${keyfile}.tmp$$ -XY -o "StrictHostKeyChecking=no" -o "ProxyCommand $SSH $vzhost run $ct \"(echo `cat ${keyfile}.tmp$$.pub` > /root/.vzsh.tmp$$.pub);/usr/sbin/sshd -i -o AuthorizedKeysFile=/root/.vzsh.tmp$$.pub;rm /root/.vzsh.tmp$$.pub\"" $ct $ccmd
       rm -f ${keyfile}.tmp$$ ${keyfile}.tmp$$.pub 
     else
       echo "xrun: Container not found."
