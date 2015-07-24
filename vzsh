@@ -298,7 +298,7 @@ EOF
     if [ ! "$vzhost" == "" ]
     then
       ssh-keygen -q -f ${keyfile}.tmp$$ -N "" -C vzsh-tmpkey$$ -b 768
-      ssh -i ${keyfile}.tmp$$ -XY -o "StrictHostKeyChecking=no" -o "ProxyCommand $SSH $vzhost run $ct \"(echo `cat ${keyfile}.tmp$$.pub` > /root/.vzsh.tmp$$.pub);/usr/sbin/sshd -i -o AuthorizedKeysFile=/root/.vzsh.tmp$$.pub;rm /root/.vzsh.tmp$$.pub\"" $ct $ccmd
+      ssh -i ${keyfile}.tmp$$ -XY -o "StrictHostKeyChecking=no" -o "ProxyCommand $SSH $vzhost run $ct \"(echo `cat ${keyfile}.tmp$$.pub` > /root/.vzsh.tmp$$.pub);/usr/sbin/sshd -i -o AuthorizedKeysFile=/root/.vzsh.tmp$$.pub;rm /root/.vzsh.tmp$$.pub\"" -l root $ct $ccmd
       rm -f ${keyfile}.tmp$$ ${keyfile}.tmp$$.pub 
     else
       echo "xrun: Container not found."
