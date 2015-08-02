@@ -186,10 +186,10 @@ Put "This is a nameserver." in /etc/motd on ns1 and ns2. The second time we assu
 
 Use rsync to make a backup of root home-folder in mycontainer.
 
-   export VZSH_UPDATE=0
-   export VZSH_KEY=administrator
-   vzsh webhost.test ls
-   vzsh -k webmaster webhost.test ls
+    export VZSH_UPDATE=0
+    export VZSH_KEY=administrator
+    vzsh webhost.test ls
+    vzsh -k webmaster webhost.test ls
 
 Without going through all hosts to update the state of the containters, list files in the container, first logging in with your administrator key and then with the webmaster key. (-k overrides the environment variable.)
 
