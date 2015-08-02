@@ -5,7 +5,7 @@
 ############################
 
 hostfile=~/.vz/hosts
-keyfile=~/.vz/vzsh-`whoami`-SUFFIX
+keyfile_name=~/.vz/vzsh-`whoami`-SUFFIX
 statefile=~/.vz/ctstate
 
 ############################
@@ -81,6 +81,8 @@ Options:
 		Select key to use.
 	-u
 		Do not update container states.
+	-q
+		Be quiet.
 
 Actions:
 	[-r] container [command]
@@ -118,6 +120,7 @@ EOF
 # Defaults
 action=run
 update=true
+quiet=false
 # If needconf is set to yes we do need config-files.
 needconf=yes
 
@@ -147,6 +150,7 @@ else
         shift;
         otherhosts=$*;
         break;;
+      -q) quiet=true; shift;;
       -r) action=run; shift; ct=$1; shift; ccmd=$*; break;;
       -t) action=template; needconf=no; shift;;
       -u) update=false; shift;;
@@ -158,7 +162,7 @@ fi
 
 # Set default key suffix if none is given.
 [ -z "$keysuffix" ] && keysuffix=user 
-keyfile=`echo $keyfile | sed "s/SUFFIX/${keysuffix}/"`
+keyfile=`echo $keyfile_name | sed "s/SUFFIX/${keysuffix}/"`
 
 # Set ssh-command to use now when we know which key to use.
 SSH="ssh -l root -t -o PasswordAuthentication=no -o ConnectTimeout=3 -i $keyfile"
@@ -187,11 +191,13 @@ fi
 case "$action" in
   genkeys)
     if [ -f "${keyfile}" -o -f "${keyfile}.pub" ]; then
-      echo "Keyfiles $keyfile or ${keyfile}.pub exists."
-      echo "Remove if you want to generate a new one.."
-      echo ""
-      cat ${keyfile}.pub
-      echo ""
+      if [ "$quiet" == "false" ]; then
+        echo "Keyfiles $keyfile or ${keyfile}.pub exists."
+        echo "Remove if you want to generate a new one.."
+        echo ""
+        cat ${keyfile}.pub
+        echo ""
+      fi
       exit 1
     fi
     keyusername=`whoami`
@@ -199,14 +205,21 @@ case "$action" in
     then
       keyusername="${keyusername}_${keysuffix}"
     fi
-    ssh-keygen -q -C `echo $keyfile | sed 's#^.*/##'` -f $keyfile -N '' && (
-      echo "$keyfile generated"
-      perl -pi -e "s#^#command=\"~/bin/vzshd user=${keyusername}\" #" ${keyfile}.pub
-      echo ""
-      echo "Distribute this to ~root/.ssh/authorized_keys on all vz-hosts:"
-      echo ""
-      cat ${keyfile}.pub
-      echo ""
+    ssh-keygen -q -t rsa -C `echo $keyfile | sed 's#^.*/##'` -f $keyfile -N '' && (
+
+      # Unless this is the X11-key, add the command-argument
+      if [ \! "$keysuffix" == "X11" ]; then
+        perl -pi -e "s#^#command=\"~/bin/vzshd user=${keyusername}\" #" ${keyfile}.pub
+      fi
+
+      if [ "$quiet" == "false" ]; then
+        echo "$keyfile generated"
+        echo ""
+        echo "Distribute this to ~root/.ssh/authorized_keys on all vz-hosts:"
+        echo ""
+        cat ${keyfile}.pub
+        echo ""
+      fi
     )
     ;;
   hostrun)
@@ -283,7 +296,10 @@ IMPORTANT! You need to add OpenVZ hosts to this file.
 
 EOF
     fi
-    $0 -g
+    # Generate X11-keys
+    $0 -q -g X11
+    # Generate user-keys
+    $0 -g user
     ;;
   usage)
     usage
@@ -297,9 +313,31 @@ EOF
     vzhost=$vz_return
     if [ ! "$vzhost" == "" ]
     then
-      ssh-keygen -q -f ${keyfile}.tmp$$ -N "" -C vzsh-tmpkey$$ -b 768
-      ssh -i ${keyfile}.tmp$$ -XY -o "StrictHostKeyChecking=no" -o "ProxyCommand $SSH $vzhost run $ct \"(echo `cat ${keyfile}.tmp$$.pub` > /root/.vzsh.tmp$$.pub);/usr/sbin/sshd -i -o AuthorizedKeysFile=/root/.vzsh.tmp$$.pub;rm /root/.vzsh.tmp$$.pub\"" -l root $ct $ccmd
-      rm -f ${keyfile}.tmp$$ ${keyfile}.tmp$$.pub 
+#      ssh-keygen -q -f ${keyfile}.tmp$$ -N "" -C vzsh-tmpkey$$ -b 768
+
+      # Find X11-key
+      xkey=`echo $keyfile_name | sed "s/SUFFIX/X11/"`
+
+      if [ \! -f "${xkey}" -o \! -f "${xkey}.pub" ]; then
+        echo "Can not find X11-keys!"
+        echo "Please generate a key-pair with:"
+        echo "$0 -g X11"
+        echo "(You do not need to distribute these keys.)"
+        exit 1
+      fi
+
+      # Connect and find out paths and remote username.
+      gecos=`$SSH $vzhost run $ct 'getent passwd \`whoami\`'`
+
+      remote_user=`echo $gecos|cut -d: -f 1`
+      remote_home=`echo $gecos|cut -d: -f 6`
+
+      # Create folder and copy temporary host-key
+      cat ${xkey} | $SSH $vzhost run $ct "(mkdir ${remote_home}/.vz 2>/dev/null);cat > ${remote_home}/.vz/x11.tmp$$"
+
+      # Write X11-keys, start remote sshd and connect using a dummy name.
+      ssh -i ${xkey} -XY -o "StrictHostKeyChecking=no" -o "ProxyCommand $SSH $vzhost run $ct \"chmod 700 ${remote_home}/.vz;(echo `tr -d '\012' < ${xkey}.pub` > ${remote_home}/.vz/x11.tmp$$.pub);chmod 600 ${remote_home}/.vz/x11.tmp$$;/usr/sbin/sshd -i -o HostKey=${remote_home}/.vz/x11.tmp$$ -o AuthorizedKeysFile=${remote_home}/.vz/x11.tmp$$.pub -o UsePrivilegeSeparation=no -o UsePAM=no;rm ${remote_home}/.vz/x11.tmp$$.pub ${remote_home}/.vz/x11.tmp$$\"" -l $remote_user vzsh-x11-connection $ccmd
+
     else
       echo "xrun: Container not found."
       exit 1
