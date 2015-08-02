@@ -72,6 +72,8 @@ Options:
                 Select key to use.
         -u
                 Do not update container states.
+        -q
+                Be quiet.
 
 Actions:
         [-r] container [command]
@@ -135,7 +137,11 @@ Use this to get a shell or run a command on the host that contains the container
 
 Generate a new key or show a key that is already generated. Use ths suffix if you want to generate keys apart from the first 'user' key you generate. See the example ~/.vz/vzshd.ini above.
 
-    -m
+    -k suffix (other commands)
+    
+You can also use -k suffix or set VZSH_KEY to select different privilege levels. Default it to use your "user" key, but maybe you want to use an "admin" key to access the containers as root or separate "manager" key to start/stop or move containers.
+
+    -m command
 
 This will run different management command.
 
@@ -153,8 +159,13 @@ Move all containers on oldhost to newhost1 (and newhost2 (and newhost3)) in a ro
 Start or stop the container. I leave it as a challenge to the reader to figure out which one does what.
 
     -u
+    (Or set VZSH_UPDATE to 0 or false)
 
 For every command the script execute it will run ssh to all hosts in your ~/.vz/hosts file and look for containers. Sometimes this can be a bit time-consuming, a host may be down or moving a dns-server-container causes trouble. Using -u will skip this part and assume that the state-file created last time is accurate.
+
+    -q
+
+Does some things a bit less verbose.
 
 ## Examples
 
@@ -174,6 +185,13 @@ Put "This is a nameserver." in /etc/motd on ns1 and ns2. The second time we assu
     rsync -va --rsh=vzsh mycontainer.mydomain:/root ~/backup
 
 Use rsync to make a backup of root home-folder in mycontainer.
+
+   export VZSH_UPDATE=0
+   export VZSH_KEY=administrator
+   vzsh webhost.test ls
+   vzsh -k webmaster webhost.test ls
+
+Without going through all hosts to update the state of the containters, list files in the container, first logging in with your administrator key and then with the webmaster key. (-k overrides the environment variable.)
 
 ## Copyright
 
