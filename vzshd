@@ -353,31 +353,30 @@ EOF
     vz_checkperm $user $ct
     if [ "$vz_return" == "allowed" ]
     then
-      # Use "exec" instead of "enter" if there is a command to be sent.
-      ctlcmd=enter;
-      if [ \! "$ccmd" == "" ]
-      then
-        ctlcmd="exec";
-      fi
 
+      # Check who to run as
       vz_runas $user $ct
-      if [ \! "$vz_return" == "root" ]; then
-
+      if [ "$vz_return" == "root" ]; then
+        # Run as root
+        if [ "$ccmd" == "" ]
+        then
+          vzctl --quiet enter $ct
+        else
+          vzctl --quiet exec $ct $ccmd
+        fi
+      else
+        # Run as user in $vz_return
         # Force /bin/bash if empty
         if [ "$ccmd" == "" ]
         then
           # "enter" will give you a tty but this will
           # also echo the 'su' command.
           # Ugly, but it works.
-          ccmd="--exec exec su - $vz_return"
-          ctlcmd="enter";
+          vzctl --quiet enter $ct --exec exec su - $vz_return
         else
-          ccmd="su - $vz_return -- -c \"$ccmd\""
-          ctlcmd="exec";
+          vzctl --quiet exec $ct su - $vz_return -- -c \'$ccmd\'
         fi
       fi
-
-      vzctl --quiet $ctlcmd $ct $ccmd
 
     else
       echo "$0: permission denied for $user@$ct" 
