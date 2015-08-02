@@ -366,7 +366,6 @@ EOF
         fi
       else
         # Run as user in $vz_return
-        # Force /bin/bash if empty
         if [ "$ccmd" == "" ]
         then
           # "enter" will give you a tty but this will
@@ -374,7 +373,7 @@ EOF
           # Ugly, but it works.
           vzctl --quiet enter $ct --exec exec su - $vz_return
         else
-          vzctl --quiet exec $ct su - $vz_return -- -c \'$ccmd\'
+          vzctl --quiet exec $ct su - $vz_return -- -c \'"$ccmd"\'
         fi
       fi
 
