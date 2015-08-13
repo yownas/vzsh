@@ -181,6 +181,10 @@ Get uptime from testct.example.com.
 
     vzsh -k admin -h testct.example.com vzctl destroy testct.example.com
 
+Check uptime and load of all hosts, maybe to find a host with low load that you can move containers to.
+
+    vzsh -h athosts uptime
+
 Using your admin-key, login on the host running testct.example.com and remove it. This is a good example why you would like to have separate admin-keys, to avoid doing something dangerous by mistake.
 
     echo "This is a nameserver." | vzsh ns1.mydomain 'cat > /etc/motd'
