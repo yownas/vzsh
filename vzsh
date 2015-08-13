@@ -23,9 +23,11 @@ vzhosts=`cat $hostfile 2> /dev/null| awk '/^[^#]/{print $1}' | tr '\012' ' ' `
 # Run command on all the hosts.
 vz_athosts() {
   cmd=$1
+  shift
+  ccmd=$*
   for vzhost in $vzhosts;
   do
-    ($SSH $vzhost $cmd)
+    ($SSH $vzhost $cmd $ccmd)
   done
 }
 
@@ -99,6 +101,8 @@ Actions:
 		Start container
 	-m stop container
 		Stop container
+        -m athosts command
+                Run command on all hosts.
 	-g [suffix]
 		Generate ssh-keyspairs. After keys been generated
 		distribute your ${keyfile}.pub
@@ -264,6 +268,10 @@ case "$action" in
         vzhost=$ct
         $SSH $vzhost $ccmd $otherhosts
         ;;
+      athosts)
+        # $otherhosts is the command to run
+        vz_athosts hostrun $otherhosts 
+        ;;
       *)
         echo "manage: Unknown command: $ccmd"
         exit 1
@@ -315,7 +323,6 @@ EOF
     vzhost=$vz_return
     if [ ! "$vzhost" == "" ]
     then
-#      ssh-keygen -q -f ${keyfile}.tmp$$ -N "" -C vzsh-tmpkey$$ -b 768
 
       # Find X11-key
       xkey=`echo $keyfile_name | sed "s/SUFFIX/X11/"`
