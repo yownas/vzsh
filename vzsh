@@ -269,8 +269,8 @@ case "$action" in
         $SSH $vzhost $ccmd $otherhosts
         ;;
       athosts)
-        # $otherhosts is the command to run
-        vz_athosts hostrun $otherhosts 
+        # $ct & $otherhosts contain the command to run
+        vz_athosts hostrun $ct $otherhosts 
         ;;
       *)
         echo "manage: Unknown command: $ccmd"

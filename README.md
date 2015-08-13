@@ -90,6 +90,8 @@ Actions:
                 Start container
         -m stop container
                 Stop container
+        -m athosts command
+                Run command on all hosts.
         -g [suffix]
                 Generate ssh-keyspairs. After keys been generated
                 distribute your /home/yes/.vz/vzsh-yes-user.pub to all vz-hosts
@@ -157,6 +159,10 @@ Move all containers on oldhost to newhost1 (and newhost2 (and newhost3)) in a ro
     -m stop container
 
 Start or stop the container. I leave it as a challenge to the reader to figure out which one does what.
+
+    -m athosts command
+
+Run command on all hosts in your hosts-file. 
 
     -u
     (Or set VZSH_UPDATE to 0 or false)
