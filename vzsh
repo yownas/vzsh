@@ -27,6 +27,7 @@ vz_athosts() {
   ccmd=$*
   for vzhost in $vzhosts;
   do
+    [ "$prefix" == "true" -a \! "$cmd" == "list" ] && echo -n "$vzhost "
     ($SSH $vzhost $cmd $ccmd)
   done
 }
@@ -81,6 +82,8 @@ Usage: $0 [options] [action]
 Options:
 	-k suffix
 		Select key to use.
+        -p
+		Show hostname as prefix when using -m athosts
 	-u
 		Do not update container states.
 	-q
@@ -125,6 +128,7 @@ EOF
 action=run
 update=true
 [ "$VZSHUPDATE" == "0" -o "$VZSH_UPDATE" == "false" ] && update=false
+prefix=false
 quiet=false
 # If needconf is set to yes we do need config-files.
 needconf=yes
@@ -155,6 +159,7 @@ else
         shift;
         otherhosts=$*;
         break;;
+      -p) prefix=true; shift;;
       -q) quiet=true; shift;;
       -r) action=run; shift; ct=$1; shift; ccmd=$*; break;;
       -t) action=template; needconf=no; shift;;
@@ -171,7 +176,7 @@ fi
 keyfile=`echo $keyfile_name | sed "s/SUFFIX/${keysuffix}/"`
 
 # Set ssh-command to use now when we know which key to use.
-SSH="ssh -l root -t -o PasswordAuthentication=no -o ConnectTimeout=3 -i $keyfile"
+SSH="ssh -l root -t -o PasswordAuthentication=no -o ConnectTimeout=3 -o LogLevel=QUIET -i $keyfile"
 
 if [ "$needconf" == "yes" ]
 then
