@@ -27,8 +27,12 @@ vz_athosts() {
   ccmd=$*
   for vzhost in $vzhosts;
   do
-    [ "$prefix" == "true" -a \! "$cmd" == "list" ] && echo -n "$vzhost "
-    ($SSH $vzhost $cmd $ccmd)
+    if [  "$prefix" == "true" -a "$cmd" == "hostrun" ];
+    then
+      ($SSH $vzhost $cmd $ccmd | sed "s/^/$vzhost /")
+    else
+      ($SSH $vzhost $cmd $ccmd)
+    fi
   done
 }
 
