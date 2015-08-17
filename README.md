@@ -68,38 +68,40 @@ VZ shell
 Usage: vzsh [options] [action]
 
 Options:
-        -k suffix
+        -k <suffix>
                 Select key to use.
+        -p
+                Show hostname as prefix when using -m athosts
         -u
                 Do not update container states.
         -q
                 Be quiet.
 
 Actions:
-        [-r] container [command]
+        [-r] container [<command>]
                 Run command/shell in container.
-        -x container [command]
+        -x container [<command>]
                 Run command/shell in container with X11 forwarding.
         -l
                 Show list of all containers on all hosts.
-        -m move container host
+        -m move <container> <host>
                 Move container to host.
-        -m moveall host1 host2 [host3]
+        -m moveall <host1> <host2> [<host3>]
                 Move all containers from host1 to host2 [and host3]
-        -m start container
-                Start container
-        -m stop container
+        -m start <container>
+                 Start container
+        -m stop <container>
                 Stop container
-        -m athosts command
+        -m athosts <command>
                 Run command on all hosts.
-        -g [suffix]
+        -g [<suffix>]
                 Generate ssh-keyspairs. After keys been generated
-                distribute your /home/yes/.vz/vzsh-yes-user.pub to all vz-hosts
-                you need to access. Admin also has to update
-                vzshd.ini to give you persmissions.
+                distribute your /home/user/.vz/vzsh-user-user.pub
+                to all vz-hosts you need to access. Admin also has to
+                update vzshd.ini to give you persmissions.
         -t
                 Create folder and empty hostfile-template, implies -g.
-        -h container [command]
+        -h container [<command>]
                 Run command/shell on host of container.
         -?
                 Show this.
@@ -175,9 +177,11 @@ Does some things a bit less verbose.
 
 ## Examples
 
+Get uptime from testct.example.com.
+
     vzsh testct.example.com uptime
 
-Get uptime from testct.example.com.
+Using your admin-key, login on the host running testct.example.com and remove it. This is a good example why you would like to have separate admin-keys, to avoid doing something dangerous by mistake.
 
     vzsh -k admin -h testct.example.com vzctl destroy testct.example.com
 
@@ -185,23 +189,21 @@ Check uptime and load of all hosts, maybe to find a host with low load that you 
 
     vzsh -h athosts uptime
 
-Using your admin-key, login on the host running testct.example.com and remove it. This is a good example why you would like to have separate admin-keys, to avoid doing something dangerous by mistake.
+Put "This is a nameserver." in /etc/motd on ns1 and ns2. The second time we assume that ns2 hasn't moved and use -u to speed things up.
 
     echo "This is a nameserver." | vzsh ns1.mydomain 'cat > /etc/motd'
     echo "This is a nameserver." | vzsh -u ns2.mydomain 'cat > /etc/motd'
 
-Put "This is a nameserver." in /etc/motd on ns1 and ns2. The second time we assume that ns2 hasn't moved and use -u to speed things up.
+Use rsync to make a backup of root home-folder in mycontainer.
 
     rsync -va --rsh=vzsh mycontainer.mydomain:/root ~/backup
 
-Use rsync to make a backup of root home-folder in mycontainer.
+Without going through all hosts to update the state of the containters, list files in the container, first logging in with your administrator key and then with the webmaster key. (-k overrides the environment variable.)
 
     export VZSH_UPDATE=0
     export VZSH_KEY=administrator
     vzsh webhost.test ls
     vzsh -k webmaster webhost.test ls
-
-Without going through all hosts to update the state of the containters, list files in the container, first logging in with your administrator key and then with the webmaster key. (-k overrides the environment variable.)
 
 ## Copyright
 
