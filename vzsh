@@ -84,7 +84,7 @@ VZ shell
 Usage: $0 [options] [action]
 
 Options:
-	-k suffix
+	-k <suffix>
 		Select key to use.
         -p
 		Show hostname as prefix when using -m athosts
@@ -94,30 +94,30 @@ Options:
 		Be quiet.
 
 Actions:
-	[-r] container [command]
+	[-r] container [<command>]
 		Run command/shell in container.
-	-x container [command]
+	-x container [<command>]
 		Run command/shell in container with X11 forwarding.
 	-l
 		Show list of all containers on all hosts.
-	-m move container host
+	-m move <container> <host>
 		Move container to host.
-	-m moveall host1 host2 [host3]
+	-m moveall <host1> <host2> [<host3>]
 		Move all containers from host1 to host2 [and host3]
-	-m start container
-		Start container
-	-m stop container
+	-m start <container>
+		 Start container
+	-m stop <container>
 		Stop container
-        -m athosts command
+        -m athosts <command>
                 Run command on all hosts.
-	-g [suffix]
+	-g [<suffix>]
 		Generate ssh-keyspairs. After keys been generated
 		distribute your ${keyfile}.pub
                 to all vz-hosts you need to access. Admin also has to
                 update vzshd.ini to give you persmissions.
 	-t
 		Create folder and empty hostfile-template, implies -g.
-	-h container [command]
+	-h container [<command>]
 		Run command/shell on host of container.
 	-?
 		Show this.
