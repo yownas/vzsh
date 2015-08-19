@@ -35,7 +35,7 @@ Example ~root/.vz/vzshd.ini:
 
     [groups]
     wheel:user1
-    managers:user1_admin
+    managers:user1+admin
     logadmins:alice,bob
     
     [containers]
@@ -103,6 +103,8 @@ Actions:
                 Create folder and empty hostfile-template, implies -g.
         -h container [<command>]
                 Run command/shell on host of container.
+        -H <host> [<command>]
+                Run command/shell on host.
         -?
                 Show this.
 ```
@@ -133,15 +135,16 @@ Get a shell or run a command with X11 forwarding. This is a bit more complicated
 Basically you are tunneling X11 over the text-only console 'vzctl exec' give you. The advantage of doing it like this instead of using ssh directly to the container is that you do not need to have access to the network the container runs in (only the host). Sshd doesn't need to run and you don't need to know the root-password or have any keys installed.
 
     -h container [command]
+    -H <host> [<command>]
 
-Use this to get a shell or run a command on the host that contains the container. Basically a ssh to the host, but using the generated key.
+Use this to get a shell or run a command on the host that contains the container or the specified host if you use -H. Basically a ssh to the host, but using vzsh/vzshd instead.
 
     -g [suffix]
     -k suffix -g
 
-Generate a new key or show a key that is already generated. Use ths suffix if you want to generate keys apart from the first 'user' key you generate. See the example ~/.vz/vzshd.ini above.
+Generate a new key or show a key that is already generated. Use the suffix if you want to generate keys apart from the first 'user' key you generate. See the example ~/.vz/vzshd.ini above.
 
-    -k suffix (other commands)
+    -k suffix (other options/commands)
     
 You can also use -k suffix or set VZSH_KEY to select different privilege levels. Default it to use your "user" key, but maybe you want to use an "admin" key to access the containers as root or separate "manager" key to start/stop or move containers.
 
@@ -174,6 +177,14 @@ For every command the script execute it will run ssh to all hosts in your ~/.vz/
     -q
 
 Does some things a bit less verbose.
+
+## Using ssh-agent
+
+vzsh tries to make it easy to use passwords with your generated keys. If you don't have ssh-agent running it will start one temporarily. To avoid having to type your password every time you use vzsh you can use ssh-add to add the key to ssh-agent and set a time-out for how it should be valid.
+
+Add ~/.vz/vzsh-yownas-admin (you need the full path with ~/ or /home/username/ or vzsh will get confused) and set the time-to-live to 3600 seconds (1 hour).
+
+    ssh-add -t 3600 ~/.vz/vzsh-yownas-admin
 
 ## Examples
 
