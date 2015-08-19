@@ -12,7 +12,6 @@ statefile=~/.vz/ctstate
 # Variables (Do not edit)
 ############################
 
-#vzhosts=`cat $hostfile 2> /dev/null| grep -v ^# | grep . | tr '\012' ' ' `
 vzhosts=`cat $hostfile 2> /dev/null| awk '/^[^#]/{print $1}' | tr '\012' ' ' `
 
 ############################
@@ -29,9 +28,9 @@ vz_athosts() {
   do
     if [  "$prefix" == "true" -a "$cmd" == "hostrun" ];
     then
-      ($SSH $vzhost $cmd $ccmd | sed "s/^/$vzhost /")
+      $SSH $vzhost $cmd $ccmd | sed "s/^/$vzhost /"
     else
-      ($SSH $vzhost $cmd $ccmd)
+      $SSH $vzhost $cmd $ccmd
     fi
   done
 }
@@ -186,7 +185,7 @@ keyfile=`echo $keyfile_name | sed "s/SUFFIX/${keysuffix}/"`
 vz_tmpagent=no
 if [ -z "$SSH_AGENT_PID" -a "$needconf" == "yes" ]
 then
-  eval `ssh-agent` > /dev/null
+  eval `ssh-agent -s` > /dev/null
   vz_tmpagent=yes
 fi
 # Add key to ssh-agent
@@ -243,7 +242,7 @@ case "$action" in
     keyusername=`whoami`
     if [ \! "$keysuffix" == "user" ]
     then
-      keyusername="${keyusername}_${keysuffix}"
+      keyusername="${keyusername}+${keysuffix}"
     fi
     ssh-keygen -q -t rsa -C `echo $keyfile | sed 's#^.*/##'` -f $keyfile -N '' && (
 
@@ -399,7 +398,7 @@ then
 fi
 if [ "$vz_tmpagent" == "yes" ]
 then
-  eval `ssh-agent -k` > /dev/null
+  eval `ssh-agent -sk` > /dev/null
 fi
 
 
