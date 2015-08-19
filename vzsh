@@ -112,13 +112,15 @@ Actions:
                 Run command on all hosts.
 	-g [<suffix>]
 		Generate ssh-keyspairs. After keys been generated
-		distribute your ${keyfile}.pub
+		distribute your ${keyfile}.dist.pub
                 to all vz-hosts you need to access. Admin also has to
                 update vzshd.ini to give you persmissions.
 	-t
 		Create folder and empty hostfile-template, implies -g.
-	-h container [<command>]
+	-h <container> [<command>]
 		Run command/shell on host of container.
+	-H <host> [<command>]
+		Run command/shell on host.
 	-?
 		Show this.
 EOF
@@ -151,6 +153,7 @@ else
         needconf=no;
         break;;
       -h) action=hostrun; shift; ct=$1; shift; ccmd=$*; shift $#; break;;
+      -H) action=hostrun; shift; vzhost=$1; shift; ccmd=$*; shift $#; break;;
       -\?) action=usage; needconf=no; shift; break;;
       -k) shift; keysuffix=$1; shift;;
       -l) action=list; shift;;
@@ -178,6 +181,27 @@ fi
 [ -z "$keysuffix" ] && keysuffix=$VZSH_KEY 
 [ -z "$keysuffix" ] && keysuffix=user 
 keyfile=`echo $keyfile_name | sed "s/SUFFIX/${keysuffix}/"`
+
+# Start a local ssh-agent if needed
+vz_tmpagent=no
+if [ -z "$SSH_AGENT_PID" -a "$needconf" == "yes" ]
+then
+  eval `ssh-agent` > /dev/null
+  vz_tmpagent=yes
+fi
+# Add key to ssh-agent
+if [ "$needconf" == "yes" ]
+then
+  if (ssh-add -L | grep $keyfile > /dev/null)
+  then
+    vz_tmpagentkey=no
+  else
+    vz_tmpagentkey=yes
+    # Add temporary key with a timeout of 30 seconds
+    # should be more than enough.
+    ssh-add -t 30 $keyfile 2> /dev/null
+  fi
+fi
 
 # Set ssh-command to use now when we know which key to use.
 SSH="ssh -l root -t -o PasswordAuthentication=no -o ConnectTimeout=3 -o LogLevel=QUIET -i $keyfile"
@@ -209,8 +233,9 @@ case "$action" in
       if [ "$quiet" == "false" ]; then
         echo "Keyfiles $keyfile or ${keyfile}.pub exists."
         echo "Remove if you want to generate a new one.."
+        echo "Or distribute this one to hosts you need access to."
         echo ""
-        cat ${keyfile}.pub
+        cat ${keyfile}.dist.pub
         echo ""
       fi
       exit 1
@@ -222,9 +247,9 @@ case "$action" in
     fi
     ssh-keygen -q -t rsa -C `echo $keyfile | sed 's#^.*/##'` -f $keyfile -N '' && (
 
-      # Unless this is the X11-key, add the command-argument
+      # Unless this is the X11-key, create dist-key-file
       if [ \! "$keysuffix" == "X11" ]; then
-        perl -pi -e "s#^#command=\"~/bin/vzshd user=${keyusername}\" #" ${keyfile}.pub
+        cat ${keyfile}.pub | sed "s#^#command=\"~/bin/vzshd user=${keyusername}\" #" > ${keyfile}.dist.pub
       fi
 
       if [ "$quiet" == "false" ]; then
@@ -232,17 +257,21 @@ case "$action" in
         echo ""
         echo "Distribute this to ~root/.ssh/authorized_keys on all vz-hosts:"
         echo ""
-        cat ${keyfile}.pub
+        cat ${keyfile}.dist.pub
         echo ""
       fi
     )
     ;;
   hostrun)
     [ "$update" == "true" ] && vz_updatestate
-    vz_getctname $ct
-    ct=$vz_return
-    vz_gethost $ct
-    vzhost=$vz_return
+    # If $vzhost wasn't set by -H, get the host from the container-name
+    if [ "$vzhost" == "" ]
+    then
+      vz_getctname $ct
+      ct=$vz_return
+      vz_gethost $ct
+      vzhost=$vz_return
+    fi
     if [ ! "$vzhost" == "" ]
     then
       $SSH $vzhost hostrun $ccmd
@@ -362,4 +391,17 @@ EOF
     fi
     ;;
 esac
+
+# Clean up temporary ssh-agent and keys.
+if [ "$vz_tmpagentkey" == "yes" ]
+then
+  ssh-add -d ${keyfile}.pub 2> /dev/null
+fi
+if [ "$vz_tmpagent" == "yes" ]
+then
+  eval `ssh-agent -k` > /dev/null
+fi
+
+
+
 
