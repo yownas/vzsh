@@ -151,11 +151,31 @@ else
         [ -z "$keysuffix" ] && keysuffix=$1;
         needconf=no;
         break;;
-      -h) action=hostrun; shift; ct=$1; shift; ccmd=$*; shift $#; break;;
-      -H) action=hostrun; shift; vzhost=$1; shift; ccmd=$*; shift $#; break;;
-      -\?) action=usage; needconf=no; shift; break;;
-      -k) shift; keysuffix=$1; shift;;
-      -l) action=list; shift;;
+      -h)
+        action=hostrun;
+        shift;
+        ct=$1;
+        shift;
+        ccmd=$*;
+        break;;
+      -H)
+        action=hostrun;
+        shift;
+        vzhost=$1;
+        shift;
+        ccmd=$*;
+        break;;
+      -\?)
+        action=usage;
+        needconf=no;
+        break;;
+      -k)
+        shift;
+        keysuffix=$1;
+        shift;;
+      -l)
+        action=list;
+        shift;;
       -m)
         action=manage;
         shift;
@@ -165,13 +185,38 @@ else
         shift;
         otherhosts=$*;
         break;;
-      -p) prefix=true; shift;;
-      -q) quiet=true; shift;;
-      -r) action=run; shift; ct=$1; shift; ccmd=$*; break;;
-      -t) action=template; needconf=no; shift;;
-      -u) update=false; shift;;
-      -x) action=xrun; shift; ct=$1; shift; ccmd=$*; break;;
-      *) ct=$1; shift; ccmd=$*; break;;
+      -p)
+        prefix=true;
+        shift;;
+      -q)
+        quiet=true;
+        shift;;
+      -r)
+        action=run;
+        shift;
+        ct=$1;
+        shift;
+        ccmd=$*;
+        break;;
+      -t)
+        action=template;
+        needconf=no;
+        break;;
+      -u)
+        update=false;
+        shift;;
+      -x)
+        action=xrun;
+        shift;
+        ct=$1;
+        shift;
+        ccmd=$*;
+        break;;
+      *)
+        ct=$1;
+        shift;
+        ccmd=$*;
+        break;;
     esac
   done
 fi
@@ -192,7 +237,7 @@ then
     vz_tmpagent=no
   else
     vz_tmpagent=yes
-    eval `ssh-agent -s`
+    eval `ssh-agent -s` > /dev/null
   fi
 
   # Add key to ssh-agent
