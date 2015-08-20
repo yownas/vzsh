@@ -181,16 +181,21 @@ fi
 [ -z "$keysuffix" ] && keysuffix=user 
 keyfile=`echo $keyfile_name | sed "s/SUFFIX/${keysuffix}/"`
 
-# Start a local ssh-agent if needed
-vz_tmpagent=no
-if [ -z "$SSH_AGENT_PID" -a "$needconf" == "yes" ]
-then
-  eval `ssh-agent -s` > /dev/null
-  vz_tmpagent=yes
-fi
-# Add key to ssh-agent
 if [ "$needconf" == "yes" ]
 then
+  # Start a local ssh-agent if needed
+  # Test if we can reach ssh-agent
+  ssh-add -l > /dev/null 2>&1 
+  vz_result=$?
+  if [ "$vz_result" == "0" -o "$vz_result" == "1" ]
+  then
+    vz_tmpagent=no
+  else
+    vz_tmpagent=yes
+    eval `ssh-agent -s`
+  fi
+
+  # Add key to ssh-agent
   if (ssh-add -L | grep $keyfile > /dev/null)
   then
     vz_tmpagentkey=no
