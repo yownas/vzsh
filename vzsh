@@ -7,6 +7,7 @@
 hostfile=~/.vz/hosts
 keyfile_name=~/.vz/vzsh-`whoami`-SUFFIX
 statefile=~/.vz/ctstate
+modules=~/.vz/modules
 
 ############################
 # Variables (Do not edit)
@@ -109,6 +110,8 @@ Actions:
 		Stop container
         -m athosts <command>
                 Run command on all hosts.
+	-M <module> [<module-argument>]
+		Run scripts in ~/.vz/modules/
 	-g [<suffix>]
 		Generate ssh-keyspairs. After keys been generated
 		distribute your ${keyfile}.dist.pub
@@ -176,6 +179,13 @@ else
       -l)
         action=list;
         shift;;
+      -M)
+        action=module;
+        shift;
+        ccmd=$1;
+        shift;
+        args=$*;
+        break;;
       -m)
         action=manage;
         shift;
@@ -364,6 +374,14 @@ case "$action" in
         exit 1
         ;;
     esac
+    ;;
+  module)
+    if [ -f "${modules}/${ccmd}" ]; then
+      ${modules}/${ccmd} ${args}
+    else
+      echo "No module: ${ccmd}"
+      exit 1
+    fi
     ;;
   run)
     [ "$update" == "true" ] && vz_updatestate
