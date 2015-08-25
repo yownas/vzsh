@@ -94,6 +94,8 @@ Actions:
                 Stop container
         -m athosts <command>
                 Run command on all hosts.
+        -M <module> [<module-argument>]
+                Run scripts in ~/.vz/modules/
         -g [<suffix>]
                 Generate ssh-keyspairs. After keys been generated
                 distribute your /home/user/.vz/vzsh-user-user.pub
@@ -101,7 +103,7 @@ Actions:
                 update vzshd.ini to give you persmissions.
         -t
                 Create folder and empty hostfile-template, implies -g.
-        -h container [<command>]
+        -h <container> [<command>]
                 Run command/shell on host of container.
         -H <host> [<command>]
                 Run command/shell on host.
@@ -168,6 +170,12 @@ Start or stop the container. I leave it as a challenge to the reader to figure o
     -m athosts command
 
 Run command on all hosts in your hosts-file. 
+
+    -M <module> [<module-argument>]
+
+Run scripts/modules that are helpful to vzsh but not so much that they should be a part of the core vzsh-script.
+
+See https://github.com/yownas/vzsh-modules for some examples.
 
     -u
     (Or set VZSH_UPDATE to 0 or false)
