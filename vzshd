@@ -24,10 +24,6 @@ Usage: $0 ...
 
 Actions:
 
-Commandline:
-  init
-    Generate $vzshdini template.
-
 From vzsh:
   hostrun [command]
     Run command on local host.
@@ -230,7 +226,6 @@ vz_checkperm_host() {
 vz_parse_arg() {
   for opt in $*; do
     case "$opt" in
-      init) action=init; shift;;
       user=*) user=${1#user=}; shift;;
       --) shift; break;;
     esac
@@ -283,34 +278,6 @@ case "$action" in
       fi
     else
       echo "$0: permission denied for $user@localhost" 
-      exit 1
-    fi
-    break;;
-  init)
-    if [ \! -f "$vzshdini" ]
-    then
-      mkdir -p ${vzshdini%/[^/]*}
-      cat > $vzshdini <<EOF
-# Groups
-# group:user1,user2
-[groups]
-wheel:
-
-# Containers
-# fqdn|*:user,@group
-[containers]
-*:@wheel
-
-# OpenVZ hosts
-# fqdn|localhost:user,@group
-[hosts]
-localhost:@wheel
-
-EOF
-      echo "Template $vzshdini created."
-      exit 1
-    else
-      echo "$vzshdini exists, will not overwrite."
       exit 1
     fi
     break;;
