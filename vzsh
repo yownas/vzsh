@@ -29,9 +29,9 @@ vz_athosts() {
   do
     if [  "$prefix" == "true" -a "$cmd" == "hostrun" ];
     then
-      $SSH $vzhost $cmd $ccmd | sed "s/^/$vzhost /"
+      $SSH -o LogLevel=QUIET $vzhost $cmd $ccmd | sed "s/^/$vzhost /"
     else
-      $SSH $vzhost $cmd $ccmd
+      $SSH -o LogLevel=QUIET $vzhost $cmd $ccmd
     fi
   done
 }
@@ -263,7 +263,8 @@ then
 fi
 
 # Set ssh-command to use now when we know which key to use.
-SSH="ssh -l root -t -o PasswordAuthentication=no -o ConnectTimeout=3 -o LogLevel=QUIET -i $keyfile"
+#SSH="ssh -l root -t -o PasswordAuthentication=no -o ConnectTimeout=3 -o LogLevel=QUIET -i $keyfile"
+SSH="ssh -l root -t -o PasswordAuthentication=no -o ConnectTimeout=3 -i $keyfile"
 
 if [ "$needconf" == "yes" ]
 then
