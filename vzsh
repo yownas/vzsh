@@ -27,7 +27,7 @@ vz_athosts() {
   ccmd=$*
   for vzhost in $vzhosts;
   do
-    if [  "$prefix" == "true" -a "$cmd" == "hostrun" ];
+    if [  "$prefix" = "true" -a "$cmd" = "hostrun" ];
     then
       $SSH -o LogLevel=QUIET $vzhost $cmd $ccmd | sed "s/^/$vzhost /"
     else
@@ -44,11 +44,11 @@ vz_getctname() {
   vz_container=`grep " $ct " $statefile | awk '{print $2}'`
 
   # Try to find container name.
-  if [ "$vz_container" == "" ]; then
+  if [ "$vz_container" = "" ]; then
     vz_container=`getent hosts $ct | awk '{print $2}'`
   fi
 
-  if [ "$vz_container" == "" ]; then
+  if [ "$vz_container" = "" ]; then
     echo "getctname: Can not find container $ct"
     exit 1
   fi
@@ -135,7 +135,7 @@ EOF
 # Defaults
 action=run
 update=true
-[ "$VZSHUPDATE" == "0" -o "$VZSH_UPDATE" == "false" ] && update=false
+[ "$VZSHUPDATE" = "0" -o "$VZSH_UPDATE" = "false" ] && update=false
 prefix=false
 quiet=false
 # If needconf is set to yes we do need config-files.
@@ -236,13 +236,13 @@ fi
 [ -z "$keysuffix" ] && keysuffix=user 
 keyfile=`echo $keyfile_name | sed "s/SUFFIX/${keysuffix}/"`
 
-if [ "$needconf" == "yes" ]
+if [ "$needconf" = "yes" ]
 then
   # Start a local ssh-agent if needed
   # Test if we can reach ssh-agent
   ssh-add -l > /dev/null 2>&1 
   vz_result=$?
-  if [ "$vz_result" == "0" -o "$vz_result" == "1" ]
+  if [ "$vz_result" = "0" -o "$vz_result" = "1" ]
   then
     vz_tmpagent=no
   else
@@ -266,7 +266,7 @@ fi
 #SSH="ssh -l root -t -o PasswordAuthentication=no -o ConnectTimeout=3 -o LogLevel=QUIET -i $keyfile"
 SSH="ssh -l root -t -o PasswordAuthentication=no -o ConnectTimeout=3 -i $keyfile"
 
-if [ "$needconf" == "yes" ]
+if [ "$needconf" = "yes" ]
 then
   # Sanity checks
   if [ \! -s "$hostfile" ]
@@ -290,7 +290,7 @@ fi
 case "$action" in
   genkeys)
     if [ -f "${keyfile}" -o -f "${keyfile}.pub" ]; then
-      if [ "$quiet" == "false" ]; then
+      if [ "$quiet" = "false" ]; then
         echo "Keyfiles $keyfile or ${keyfile}.pub exists."
         echo "Remove if you want to generate a new one.."
         echo "Or distribute this one to hosts you need access to."
@@ -301,18 +301,18 @@ case "$action" in
       exit 1
     fi
     keyusername=`whoami`
-    if [ \! "$keysuffix" == "user" ]
+    if [ \! "$keysuffix" = "user" ]
     then
       keyusername="${keyusername}+${keysuffix}"
     fi
     ssh-keygen -q -t rsa -C `echo $keyfile | sed 's#^.*/##'` -f $keyfile -N '' && (
 
       # Unless this is the X11-key, create dist-key-file
-      if [ \! "$keysuffix" == "X11" ]; then
+      if [ \! "$keysuffix" = "X11" ]; then
         cat ${keyfile}.pub | sed "s#^#command=\"~/bin/vzshd user=${keyusername}\" #" > ${keyfile}.dist.pub
       fi
 
-      if [ "$quiet" == "false" ]; then
+      if [ "$quiet" = "false" ]; then
         echo "$keyfile generated"
         echo ""
         echo "Distribute this to ~root/.ssh/authorized_keys on all vz-hosts:"
@@ -323,16 +323,16 @@ case "$action" in
     )
     ;;
   hostrun)
-    [ "$update" == "true" ] && vz_updatestate
+    [ "$update" = "true" ] && vz_updatestate
     # If $vzhost wasn't set by -H, get the host from the container-name
-    if [ "$vzhost" == "" ]
+    if [ "$vzhost" = "" ]
     then
       vz_getctname $ct
       ct=$vz_return
       vz_gethost $ct
       vzhost=$vz_return
     fi
-    if [ ! "$vzhost" == "" ]
+    if [ ! "$vzhost" = "" ]
     then
       $SSH $vzhost hostrun $ccmd
     else
@@ -341,11 +341,11 @@ case "$action" in
     fi
     ;;
   list)
-    [ "$update" == "true" ] && vz_updatestate
+    [ "$update" = "true" ] && vz_updatestate
     cat $statefile
     ;;
   manage)
-    [ "$update" == "true" ] && vz_updatestate
+    [ "$update" = "true" ] && vz_updatestate
     case "$ccmd" in
       # move, start & stop have similar arguments.
       # Treat them all the same way.
@@ -354,7 +354,7 @@ case "$action" in
         ct=$vz_return
         vz_gethost $ct
         vzhost=$vz_return
-        if [ ! "$vzhost" == "" ]
+        if [ ! "$vzhost" = "" ]
         then
           $SSH $vzhost $ccmd $ct $otherhosts
         else
@@ -386,12 +386,12 @@ case "$action" in
     fi
     ;;
   run)
-    [ "$update" == "true" ] && vz_updatestate
+    [ "$update" = "true" ] && vz_updatestate
     vz_getctname $ct
     ct=$vz_return
     vz_gethost $ct
     vzhost=$vz_return
-    if [ ! "$vzhost" == "" ]
+    if [ ! "$vzhost" = "" ]
     then
       $SSH $vzhost run $ct $ccmd
     else
@@ -423,12 +423,12 @@ EOF
     exit
     ;;
   xrun)
-    [ "$update" == "true" ] && vz_updatestate
+    [ "$update" = "true" ] && vz_updatestate
     vz_getctname $ct
     ct=$vz_return
     vz_gethost $ct
     vzhost=$vz_return
-    if [ ! "$vzhost" == "" ]
+    if [ ! "$vzhost" = "" ]
     then
 
       # Find X11-key
@@ -462,11 +462,11 @@ EOF
 esac
 
 # Clean up temporary ssh-agent and keys.
-if [ "$vz_tmpagentkey" == "yes" ]
+if [ "$vz_tmpagentkey" = "yes" ]
 then
   ssh-add -d ${keyfile}.pub 2> /dev/null
 fi
-if [ "$vz_tmpagent" == "yes" ]
+if [ "$vz_tmpagent" = "yes" ]
 then
   eval `ssh-agent -sk` > /dev/null
 fi

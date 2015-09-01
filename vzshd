@@ -53,7 +53,7 @@ vz_movect() {
   otherhost=$2
 
   live=`vzlist -Hat | grep " ${ct}\$" | awk '{print $3}'`
-  if [ "$live" == "running" ]
+  if [ "$live" = "running" ]
   then
     live="--live"
   else
@@ -103,7 +103,7 @@ vz_runas() {
     # Only parse lines where there is a runas-user set
     grep = | cut -d= -f2`
 
-  [ "$vz_return" == "" ] && vz_return="root"
+  [ "$vz_return" = "" ] && vz_return="root"
 }
 
 
@@ -268,9 +268,9 @@ case "$action" in
   hostrun)
     # Run command/start shell on host.
     vz_checkperm_host $user
-    if [ "$vz_return" == "allowed" ]
+    if [ "$vz_return" = "allowed" ]
     then
-      if [ "$ccmd" == "" ]
+      if [ "$ccmd" = "" ]
       then
         /bin/bash -i
       else
@@ -288,7 +288,7 @@ case "$action" in
 
   move)
     vz_checkmanager $user move
-    if [ "$vz_return" == "allowed" ]
+    if [ "$vz_return" = "allowed" ]
     then
       vz_movect $ct $otherhost
     else
@@ -299,7 +299,7 @@ case "$action" in
 
   moveall)
     vz_checkmanager $user move
-    if [ "$vz_return" == "allowed" ]
+    if [ "$vz_return" = "allowed" ]
     then
       hosts=$otherhosts
       for ct in `vzlist -Hat | awk '{print $5}'`
@@ -318,14 +318,14 @@ case "$action" in
     # Run command/start shell in container.
     # Check if user has access to container
     vz_checkperm $user $ct
-    if [ "$vz_return" == "allowed" ]
+    if [ "$vz_return" = "allowed" ]
     then
 
       # Check who to run as
       vz_runas $user $ct
-      if [ "$vz_return" == "root" ]; then
+      if [ "$vz_return" = "root" ]; then
         # Run as root
-        if [ "$ccmd" == "" ]
+        if [ "$ccmd" = "" ]
         then
           vzctl --quiet enter $ct
         else
@@ -333,7 +333,7 @@ case "$action" in
         fi
       else
         # Run as user in $vz_return
-        if [ "$ccmd" == "" ]
+        if [ "$ccmd" = "" ]
         then
           # "enter" will give you a tty but this will
           # also echo the 'su' command.
@@ -352,7 +352,7 @@ case "$action" in
 
   start)
     vz_checkmanager $user startstop
-    if [ "$vz_return" == "allowed" ]
+    if [ "$vz_return" = "allowed" ]
     then
       vzctl start $ct
     else
@@ -363,7 +363,7 @@ case "$action" in
 
   stop)
     vz_checkmanager $user startstop
-    if [ "$vz_return" == "allowed" ]
+    if [ "$vz_return" = "allowed" ]
     then
       vzctl stop $ct
     else
