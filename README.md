@@ -206,7 +206,7 @@ Using your admin-key, login on the host running testct.example.com and remove it
 
 Check uptime and load of all hosts, maybe to find a host with low load that you can move containers to.
 
-    vzsh -h athosts uptime
+    vzsh -m athosts uptime
 
 Put "This is a nameserver." in /etc/motd on ns1 and ns2. The second time we assume that ns2 hasn't moved and use -u to speed things up.
 
