@@ -126,48 +126,48 @@ When you've done that, add hosts to your ~/.vz/hosts file and you are done.
 
 Simply list all containers on all hosts. (That you have access to.)
 
-    [-r] container [command]
+    [-r] <container> [<command>]
 
 Run a command in the container or get a root-shell. (-r is not needed) What the script does is to log into the host and then runs 'vzctl enter' (or 'vzctl exec' if you send a command).
 
-    -x container [command]
+    -x <container> [<command>]
 
 Get a shell or run a command with X11 forwarding. This is a bit more complicated. It doesn't run ssh directly. Instead it logs in as above, starts a sshd with -i so it sends data via stdin/stdout rather than over the network and then connects to it, allowing for X11 forwarding.
 
 Basically you are tunneling X11 over the text-only console 'vzctl exec' give you. The advantage of doing it like this instead of using ssh directly to the container is that you do not need to have access to the network the container runs in (only the host). Sshd doesn't need to run and you don't need to know the root-password or have any keys installed.
 
-    -h container [command]
+    -h <container> [<command>]
     -H <host> [<command>]
 
 Use this to get a shell or run a command on the host that contains the container or the specified host if you use -H. Basically a ssh to the host, but using vzsh/vzshd instead.
 
-    -g [suffix]
-    -k suffix -g
+    -g [<suffix>]
+    -k <suffix> -g
 
 Generate a new key or show a key that is already generated. Use the suffix if you want to generate keys apart from the first 'user' key you generate. See the example ~/.vz/vzshd.ini above.
 
-    -k suffix (other options/commands)
+    -k <suffix> [<other options/commands>]
     
 You can also use -k suffix or set VZSH_KEY to select different privilege levels. Default it to use your "user" key, but maybe you want to use an "admin" key to access the containers as root or separate "manager" key to start/stop or move containers.
 
-    -m command
+    -m <command>
 
 This will run different management command.
 
-    -m move container newhost
+    -m move <container> <newhost>
 
 Move a container to a new host.
 
-    -m moveall oldhost newhost1 [newhost2 [newhost3]
+    -m moveall <oldhost> <newhost1> [<newhost2> [<newhost3>]]
 
 Move all containers on oldhost to newhost1 (and newhost2 (and newhost3)) in a round-robin fashion. This could be used to empty a host if you need to do maintainance.
 
-    -m start container
-    -m stop container
+    -m start <container>
+    -m stop <container>
 
 Start or stop the container. I leave it as a challenge to the reader to figure out which one does what.
 
-    -m athosts command
+    -m athosts <command>
 
 Run command on all hosts in your hosts-file. 
 
