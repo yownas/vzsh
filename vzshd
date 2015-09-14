@@ -175,8 +175,8 @@ vz_checkoperation() {
   awk '/^\[/{p=0}/^\[operations\]$/{p=1}{if(p)print $0}' | \
   egrep -v '^\[|^$' | \
 
-  # Get operation permission and print user/groups
-  egrep "^$tmp_perm:" | \
+  # Get operation permission (or * for any) and print user/groups
+  egrep "^$tmp_perm:|^\*:" | \
   cut -d: -f2|tr , '\012'|sed 's/=.*$//' |\
 
   # Search user/group for permissions
