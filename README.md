@@ -44,7 +44,7 @@ Example /opt/vzsh/etc/vzshd.ini:
     *:@wheel
 
     [hosts]
-    localhost:@wheel,user3
+    *:@wheel,user3
     
     [operations]
     move:@managers
