@@ -145,9 +145,9 @@ vz_checkperm() {
   egrep $searchuser_str > /dev/null && vz_return=allowed
 }
 
-# vz_checkmanager user permission
-# Check manager persmissions for user
-vz_checkmanager() {
+# vz_checkoperation user permission
+# Check operation persmissions for user
+vz_checkoperation() {
   export tmp_user=$1
   export tmp_perm=$2
   vz_return=noperm
@@ -171,11 +171,11 @@ vz_checkmanager() {
   # Get all non-comment lines
   grep -v "^#" $vzshdini | \
 
-  # Print lines under [manager]
-  awk '/^\[/{p=0}/^\[manager\]$/{p=1}{if(p)print $0}' | \
+  # Print lines under [operations]
+  awk '/^\[/{p=0}/^\[operations\]$/{p=1}{if(p)print $0}' | \
   egrep -v '^\[|^$' | \
 
-  # Get manager permission and print user/groups
+  # Get operation permission and print user/groups
   egrep "^$tmp_perm:" | \
   cut -d: -f2|tr , '\012'|sed 's/=.*$//' |\
 
@@ -213,8 +213,8 @@ vz_checkperm_host() {
   awk '/^\[/{p=0}/^\[hosts\]$/{p=1}{if(p)print $0}' | \
   egrep -v '^\[|^$' | \
 
-  # Get hostname or localhost and print user/groups
-  egrep "^`hostname`:|^localhost:" | \
+  # Get hostname or * and print user/groups
+  egrep "^`hostname`:|^\*:" | \
   cut -d: -f2|tr , '\012'|sed 's/=.*$//' |\
 
   # Search user/group for permissions
@@ -287,7 +287,7 @@ case "$action" in
     break;;
 
   move)
-    vz_checkmanager $user move
+    vz_checkoperation $user move
     if [ "$vz_return" = "allowed" ]
     then
       vz_movect $ct $otherhost
@@ -298,7 +298,7 @@ case "$action" in
     break;;
 
   moveall)
-    vz_checkmanager $user move
+    vz_checkoperation $user move
     if [ "$vz_return" = "allowed" ]
     then
       hosts=$otherhosts
@@ -351,7 +351,7 @@ case "$action" in
     break;;
 
   start)
-    vz_checkmanager $user startstop
+    vz_checkoperation $user startstop
     if [ "$vz_return" = "allowed" ]
     then
       vzctl start $ct
@@ -362,7 +362,7 @@ case "$action" in
     break;;
 
   stop)
-    vz_checkmanager $user startstop
+    vz_checkoperation $user startstop
     if [ "$vz_return" = "allowed" ]
     then
       vzctl stop $ct

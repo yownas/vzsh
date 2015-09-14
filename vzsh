@@ -87,7 +87,7 @@ Options:
 	-k <suffix>
 		Select key to use.
         -p
-		Show hostname as prefix when using -m athosts
+		Show hostname as prefix when using -o athosts
 	-u
 		Do not update container states.
 	-q
@@ -100,15 +100,15 @@ Actions:
 		Run command/shell in container with X11 forwarding.
 	-l
 		Show list of all containers on all hosts.
-	-m move <container> <host>
+	-o move <container> <host>
 		Move container to host.
-	-m moveall <host1> <host2> [<host3>]
+	-o moveall <host1> <host2> [<host3>]
 		Move all containers from host1 to host2 [and host3]
-	-m start <container>
+	-o start <container>
 		 Start container
-	-m stop <container>
+	-o stop <container>
 		Stop container
-        -m athosts <command>
+        -o athosts <command>
                 Run command on all hosts.
 	-M <module> [<module-argument>]
 		Run scripts in ~/.vz/modules/
@@ -194,8 +194,8 @@ else
           exit 1
         fi
         break;;
-      -m)
-        action=manage;
+      -o)
+        action=operation;
         shift;
         ccmd=$1;
         shift;
@@ -337,7 +337,7 @@ case "$action" in
 
       # Unless this is the X11-key, create dist-key-file
       if [ \! "$keysuffix" = "X11" ]; then
-        cat ${keyfile}.pub | sed "s#^#command=\"/opt/vzsh/bin/vzshd user=${keyusername}\" #" > ${keyfile}.dist.pub
+        cat ${keyfile}.pub | sed "s#^#command=\"~/bin/vzshd user=${keyusername}\" #" > ${keyfile}.dist.pub
       fi
 
       if [ "$quiet" = "false" ]; then
@@ -372,7 +372,7 @@ case "$action" in
     [ "$update" = "true" ] && vz_updatestate
     cat $statefile
     ;;
-  manage)
+  operation)
     [ "$update" = "true" ] && vz_updatestate
     case "$ccmd" in
       # move, start & stop have similar arguments.
@@ -386,7 +386,7 @@ case "$action" in
         then
           $SSH $vzhost $ccmd $ct $otherhosts
         else
-          echo "manage: Container host not found."
+          echo "operation: Container host not found."
           exit 1
         fi
         ;;
@@ -399,7 +399,7 @@ case "$action" in
         vz_athosts hostrun $ct $otherhosts 
         ;;
       *)
-        echo "manage: Unknown command: $ccmd"
+        echo "operation: Unknown command: $ccmd"
         exit 1
         ;;
     esac

@@ -46,7 +46,7 @@ Example /opt/vzsh/etc/vzshd.ini:
     [hosts]
     localhost:@wheel,user3
     
-    [manager]
+    [operations]
     move:@managers
     startstop:@managers
 
@@ -71,7 +71,7 @@ Options:
         -k <suffix>
                 Select key to use.
         -p
-                Show hostname as prefix when using -m athosts
+                Show hostname as prefix when using -o athosts
         -u
                 Do not update container states.
         -q
@@ -84,15 +84,15 @@ Actions:
                 Run command/shell in container with X11 forwarding.
         -l
                 Show list of all containers on all hosts.
-        -m move <container> <host>
+        -o move <container> <host>
                 Move container to host.
-        -m moveall <host1> <host2> [<host3>]
+        -o moveall <host1> <host2> [<host3>]
                 Move all containers from host1 to host2 [and host3]
-        -m start <container>
+        -o start <container>
                  Start container
-        -m stop <container>
+        -o stop <container>
                 Stop container
-        -m athosts <command>
+        -o athosts <command>
                 Run command on all hosts.
         -M <module> [<module-argument>]
                 Run scripts in ~/.vz/modules/
@@ -150,24 +150,24 @@ Generate a new key or show a key that is already generated. Use the suffix if yo
     
 You can also use -k suffix or set VZSH_KEY to select different privilege levels. Default it to use your "user" key, but maybe you want to use an "admin" key to access the containers as root or separate "manager" key to start/stop or move containers.
 
-    -m <command>
+    -o <command>
 
-This will run different management command.
+This will run different operation command.
 
-    -m move <container> <newhost>
+    -o move <container> <newhost>
 
 Move a container to a new host.
 
-    -m moveall <oldhost> <newhost1> [<newhost2> [<newhost3>]]
+    -o moveall <oldhost> <newhost1> [<newhost2> [<newhost3>]]
 
 Move all containers on oldhost to newhost1 (and newhost2 (and newhost3)) in a round-robin fashion. This could be used to empty a host if you need to do maintainance.
 
-    -m start <container>
-    -m stop <container>
+    -o start <container>
+    -o stop <container>
 
 Start or stop the container. I leave it as a challenge to the reader to figure out which one does what.
 
-    -m athosts <command>
+    -o athosts <command>
 
 Run command on all hosts in your hosts-file. 
 
@@ -206,7 +206,7 @@ Using your admin-key, login on the host running testct.example.com and remove it
 
 Check uptime and load of all hosts, maybe to find a host with low load that you can move containers to.
 
-    vzsh -m athosts uptime
+    vzsh -o athosts uptime
 
 Put "This is a nameserver." in /etc/motd on ns1 and ns2. The second time we assume that ns2 hasn't moved and use -u to speed things up.
 
