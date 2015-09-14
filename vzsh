@@ -160,6 +160,10 @@ else
         ct=$1;
         shift;
         ccmd=$*;
+        if [ -z "$ct" ]; then
+          echo "ERROR: container name needed."
+          exit 1
+        fi
         break;;
       -H)
         action=hostrun;
@@ -167,6 +171,10 @@ else
         vzhost=$1;
         shift;
         ccmd=$*;
+        if [ -z "$vzhost" ]; then
+          echo "ERROR: hostname needed."
+          exit 1
+        fi
         break;;
       -k)
         shift;
@@ -181,6 +189,10 @@ else
         ccmd=$1;
         shift;
         args=$*;
+        if [ -z "$ccmd" ]; then
+          echo "ERROR: module name needed."
+          exit 1
+        fi
         break;;
       -m)
         action=manage;
@@ -190,6 +202,10 @@ else
         ct=$1;
         shift;
         otherhosts=$*;
+        if [ -z "$ccmd" ]; then
+          echo "ERROR: operation needed."
+          exit 1
+        fi
         break;;
       -p)
         prefix=true;
@@ -203,6 +219,10 @@ else
         ct=$1;
         shift;
         ccmd=$*;
+        if [ -z "$ct" ]; then
+          echo "ERROR: container name needed."
+          exit 1
+        fi
         break;;
       -t)
         action=template;
@@ -217,6 +237,10 @@ else
         ct=$1;
         shift;
         ccmd=$*;
+        if [ -z "$ct" ]; then
+          echo "ERROR: container name needed."
+          exit 1
+        fi
         break;;
 
       # Anything starting with - here is an error. Show usage.
