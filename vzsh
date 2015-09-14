@@ -337,7 +337,7 @@ case "$action" in
 
       # Unless this is the X11-key, create dist-key-file
       if [ \! "$keysuffix" = "X11" ]; then
-        cat ${keyfile}.pub | sed "s#^#command=\"~/bin/vzshd user=${keyusername}\" #" > ${keyfile}.dist.pub
+        cat ${keyfile}.pub | sed "s#^#command=\"/opt/vzsh/bin/vzshd user=${keyusername}\" #" > ${keyfile}.dist.pub
       fi
 
       if [ "$quiet" = "false" ]; then

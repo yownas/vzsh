@@ -29,9 +29,9 @@ Copy vzsh somewhere where admin-users will have access to it. Users then need to
 
 Then create a ssh-key-pair with vzsh -g and distribute it to all hosts you are supposed to have access to.
 
-In the OpenVZ hosts you need to place vzshd in ~root/bin/vzshd and create an ini-file, ~root/.vz/vzshd.ini that controlls who can log in.
+In the OpenVZ hosts you need to place vzshd in /opt/vzsh/bin/vzshd and create an ini-file, /opt/vzsh/etc/vzshd.ini that controlls who can log in.
 
-Example ~root/.vz/vzshd.ini:
+Example /opt/vzsh/etc/vzshd.ini:
 
     [groups]
     wheel:user1
@@ -115,7 +115,7 @@ First thing you could do is to run 'vzsh -t' to get a .vz-directory and an empty
 
 Example key:
 ```
-command="~/bin/vzshd user=yownas" ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCvnBflmZrFValum2bW/hSvzt2WihNjXLMoIjkXaGbc994gxxssQg0/7FdtRboWkvOO4ytJSn2JBXzMpjq3jxc1FOTiZ3GgMO5Odv76+plLVUFtX0wG8Kycye9/wcRHK8Jy6TG4/AdVjpFTudWIK5GOpx28gueKDy1KhBFhEFf2DITOSjwKiUTgmPddADB3itbkBmAi1gJXed6XUjFrWeJCZTc0Swsn4OrMfK34uCtQ9j3fy16de42Uh0/dHt43HAuyCV+A7HT+/WtVagGjuorFD2f1wUt7V0FVXvhyyiotTWpIpnfouPTDfPOzwXF+fHS4lfpFepBzUNBEl4YsaUCp vzsh-yownas-user
+command="/opt/vzsh/bin/vzshd user=yownas" ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCvnBflmZrFValum2bW/hSvzt2WihNjXLMoIjkXaGbc994gxxssQg0/7FdtRboWkvOO4ytJSn2JBXzMpjq3jxc1FOTiZ3GgMO5Odv76+plLVUFtX0wG8Kycye9/wcRHK8Jy6TG4/AdVjpFTudWIK5GOpx28gueKDy1KhBFhEFf2DITOSjwKiUTgmPddADB3itbkBmAi1gJXed6XUjFrWeJCZTc0Swsn4OrMfK34uCtQ9j3fy16de42Uh0/dHt43HAuyCV+A7HT+/WtVagGjuorFD2f1wUt7V0FVXvhyyiotTWpIpnfouPTDfPOzwXF+fHS4lfpFepBzUNBEl4YsaUCp vzsh-yownas-user
 ```
 
 When added to ~root/.ssh/authorized_keys on the host it will allow you to login as root but not give you a shell, instead it will run ~/bin/vzshd regardless of which command you told it to run. Is this super-secure and hacker resistant? No, and yes. No, the vzshd is just a shell script and I would be surprised if there wasn't some way to trick it to execute any command. On the other hand, only people with ssh-keys added are able to execute the script. As long as only administrators have keys and keep them safe you are ok....well, ok-ish. If you need super-security, let the non-admins play with their own cluster of servers.

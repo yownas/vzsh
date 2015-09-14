@@ -10,7 +10,7 @@
 # Variables
 ############################
 
-vzshdini=~/.vz/vzshd.ini
+vzshdini=/opt/vzsh/etc/vzshd.ini
 
 ############################
 # Functions
