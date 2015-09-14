@@ -168,10 +168,6 @@ else
         shift;
         ccmd=$*;
         break;;
-      -\?)
-        action=usage;
-        needconf=no;
-        break;;
       -k)
         shift;
         keysuffix=$1;
@@ -222,6 +218,14 @@ else
         shift;
         ccmd=$*;
         break;;
+
+      # Anything starting with - here is an error. Show usage.
+      -\?|-*)
+        action=usage;
+        needconf=no;
+        break;;
+
+      # If no (more) options, treat the rest as <container> [<command>]
       *)
         ct=$1;
         shift;
