@@ -48,13 +48,18 @@ Example /opt/vzsh/etc/vzshd.ini:
     
     [operations]
     move:@managers
-    startstop:@managers
+    startstop:@managers,@logadmins
+
+    [modules]
+    *:@wheel
 
 user1 has access to any container, as the group @wheel, while user2 only have access to www.example.com.
 
 Alice and Bob are members of the logadmins-group and are able to access the container syslog.local.domain, but only as loguser, not root.
 
-@wheel and user3 are allowed to get a shell on the local OpenVZ host. Only the group "managers" are allowed to start and stop containers and move them to other hosts. user1 is a member of  managers but has to use a special key with "admin" as suffix.
+@wheel and user3 are allowed to get a shell on the local (any) OpenVZ host. Only the group "managers" are allowed to move containers other hosts. While the group managers and logadmins can start and stop containers. user1 is a member of managers but has to use a special key with "admin" as suffix to gain that access.
+
+The modules-section gives permissions to run scripts/modules under /opt/vzsh/modulesd, see further down to see more about modules.
 
 In ~root/.ssh/authorized_keys you need to add the public keys generated in the step above.
 
@@ -175,7 +180,7 @@ Run command on all hosts in your hosts-file.
 
 Run scripts/modules that are helpful to vzsh but not so much that they should be a part of the core vzsh-script.
 
-See https://github.com/yownas/vzsh-modules for some examples.
+See https://github.com/yownas/vzsh-modules for some examples and how to setup.
 
     -u
     (Or set VZSH_UPDATE to 0 or false)
