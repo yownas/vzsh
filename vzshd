@@ -10,7 +10,9 @@
 # Variables
 ############################
 
-vzshdini=/opt/vzsh/etc/vzshd.ini
+vzshprefix=/opt/vzsh
+vzshdini=${vzshprefix}/etc/vzshd.ini
+moduledir=${vzshprefix}/modulesd
 
 ############################
 # Functions
@@ -25,23 +27,25 @@ Usage: $0 ...
 Actions:
 
 From vzsh:
-  hostrun [command]
+  hostrun [<command>]
     Run command on local host.
 
   list
     Show list of all containers.
 
-  move ct host
+  module <modulename> [<args>]
+
+  move <ct> <host>
     Move container to another host.
 
-  moveall host [host]
+  moveall <host> [<host>]
     Move all containers to other hosts.
 
-  run ct [command]
+  run <ct> [<command>]
     Run command in container.
 
-  start ct
-  stop ct
+  start <ct>
+  stop <ct>
     Start or stop a container.
 EOF
 }
@@ -164,6 +168,7 @@ vz_parse() {
     case "$opt" in
       hostrun) action=hostrun; shift; ccmd=$*; break;;
       list) action=list; shift;;
+      module) action=module; shift; module=$1; shift; ccmd=$*; break;;
       move) action=move; shift; ct=$1; shift; otherhost=$1; break;;
       moveall) action=moveall; shift; otherhosts=$*; break;;
       run) action=run; shift; ct=$1; shift; ccmd=$*; break;;
@@ -211,6 +216,17 @@ case "$action" in
     (vzlist -Hat -o hostname,ctid,status | sed "s/^/`hostname`\t/")
     break;;
 
+  module)
+    vz_checkperm modules $user $module
+    if [ "$vz_return" = "allowed" ]; then
+      # Run module
+      . ${moduledir}/$module
+    else
+      echo "$0: module $module denied for $user" 
+      exit 1
+    fi
+    break;;
+
   move)
     vz_checkperm operations $user move
     if [ "$vz_return" = "allowed" ]
@@ -239,6 +255,7 @@ case "$action" in
       exit 1
     fi
     ;;
+
   run)
     # Run command/start shell in container.
     # Check if user has access to container
