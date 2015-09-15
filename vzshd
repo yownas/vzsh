@@ -107,11 +107,12 @@ vz_runas() {
 }
 
 
-# vz_checkperm user ct
+# vz_checkperm(section, user, item)
 # Check persmissions for user
 vz_checkperm() {
-  export tmp_user=$1
-  export tmp_ct=$2
+  export tmp_section=$1
+  export tmp_user=$2
+  export tmp_item=$3
   vz_return=noperm
 
   # Create search-string from ini-file
@@ -134,87 +135,11 @@ vz_checkperm() {
   grep -v "^#" $vzshdini | \
 
   # Print lines under [containers]
-  awk '/^\[/{p=0}/^\[containers\]$/{p=1}{if(p)print $0}' | \
+  awk "/^\[/{p=0}/^\[${tmp_section}\]\$/{p=1}{if(p)print \$0}" | \
   egrep -v '^\[|^$' | \
 
   # Get container or * and print user/groups
-  egrep "^$tmp_ct:|^\*:" | \
-  cut -d: -f2|tr , '\012'|sed 's/=.*$//' |\
-
-  # Search user/group for permissions
-  egrep $searchuser_str > /dev/null && vz_return=allowed
-}
-
-# vz_checkoperation user permission
-# Check operation persmissions for user
-vz_checkoperation() {
-  export tmp_user=$1
-  export tmp_perm=$2
-  vz_return=noperm
-
-  # Create search-string from ini-file
-  searchuser_str=`
-    # Get all non-comment lines
-    grep -v "^#" $vzshdini | \
-
-    # Print lines under [groups]
-    awk '/^\[/{p=0}/^\[groups\]$/{p=1}{if(p)print "@"$0","}' | \
-    egrep -v '^\[|^,$' | \
-
-    # Grep for current user
-    grep "[:,]$tmp_user," | \
-
-    # Make search-string from groups and user.
-    awk -F: '{printf "^"$1"$|"}END{print "^"ENVIRON["tmp_user"]"$"}'`
-
-  # Search for user/groups if they have permisson
-  # Get all non-comment lines
-  grep -v "^#" $vzshdini | \
-
-  # Print lines under [operations]
-  awk '/^\[/{p=0}/^\[operations\]$/{p=1}{if(p)print $0}' | \
-  egrep -v '^\[|^$' | \
-
-  # Get operation permission (or * for any) and print user/groups
-  egrep "^$tmp_perm:|^\*:" | \
-  cut -d: -f2|tr , '\012'|sed 's/=.*$//' |\
-
-  # Search user/group for permissions
-  egrep $searchuser_str > /dev/null && vz_return=allowed
-}
-
-
-# vz_checkperm_host user
-# Check persmissions for user
-vz_checkperm_host() {
-  export tmp_user=$1
-  vz_return=noperm
-
-  # Create search-string from ini-file
-  searchuser_str=`
-    # Get all non-comment lines
-    grep -v "^#" $vzshdini | \
-
-    # Print lines under [groups]
-    awk '/^\[/{p=0}/^\[groups\]$/{p=1}{if(p)print "@"$0","}' | \
-    egrep -v '^\[|^,$' | \
-
-    # Grep for current user
-    grep "[:,]$tmp_user," | \
-
-    # Make search-string from groups and user.
-    awk -F: '{printf "^"$1"$|"}END{print "^"ENVIRON["tmp_user"]"$"}'`
-
-  # Search for user/groups if they have permisson
-  # Get all non-comment lines
-  grep -v "^#" $vzshdini | \
-
-  # Print lines under [hosts]
-  awk '/^\[/{p=0}/^\[hosts\]$/{p=1}{if(p)print $0}' | \
-  egrep -v '^\[|^$' | \
-
-  # Get hostname or * and print user/groups
-  egrep "^`hostname`:|^\*:" | \
+  egrep "^$tmp_item:|^\*:" | \
   cut -d: -f2|tr , '\012'|sed 's/=.*$//' |\
 
   # Search user/group for permissions
@@ -267,7 +192,7 @@ vz_parse $SSH_ORIGINAL_COMMAND
 case "$action" in
   hostrun)
     # Run command/start shell on host.
-    vz_checkperm_host $user
+    vz_checkperm hosts $user `hostname`
     if [ "$vz_return" = "allowed" ]
     then
       if [ "$ccmd" = "" ]
@@ -287,7 +212,7 @@ case "$action" in
     break;;
 
   move)
-    vz_checkoperation $user move
+    vz_checkperm operations $user move
     if [ "$vz_return" = "allowed" ]
     then
       vz_movect $ct $otherhost
@@ -298,7 +223,7 @@ case "$action" in
     break;;
 
   moveall)
-    vz_checkoperation $user move
+    vz_checkperm operations $user move
     if [ "$vz_return" = "allowed" ]
     then
       hosts=$otherhosts
@@ -317,7 +242,7 @@ case "$action" in
   run)
     # Run command/start shell in container.
     # Check if user has access to container
-    vz_checkperm $user $ct
+    vz_checkperm containers $user $ct
     if [ "$vz_return" = "allowed" ]
     then
 
@@ -351,7 +276,7 @@ case "$action" in
     break;;
 
   start)
-    vz_checkoperation $user startstop
+    vz_checkperm operations $user startstop
     if [ "$vz_return" = "allowed" ]
     then
       vzctl start $ct
@@ -362,7 +287,7 @@ case "$action" in
     break;;
 
   stop)
-    vz_checkoperation $user startstop
+    vz_checkperm operations $user startstop
     if [ "$vz_return" = "allowed" ]
     then
       vzctl stop $ct
