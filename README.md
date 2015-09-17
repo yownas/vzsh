@@ -90,8 +90,10 @@ Actions:
         -l
                 Show list of all containers on all hosts.
         -o move <container> <host>
+        -o move-offline <container> <host>
                 Move container to host.
         -o moveall <host1> <host2> [<host3>]
+        -o moveall-offline <host1> <host2> [<host3>]
                 Move all containers from host1 to host2 [and host3]
         -o start <container>
                  Start container
@@ -160,12 +162,14 @@ You can also use -k suffix or set VZSH_KEY to select different privilege levels.
 This will run different operation command.
 
     -o move <container> <newhost>
+    -o move-offline <container> <newhost>
 
-Move a container to a new host.
+Move a container to a new host. Default is to try to move the container live without restarting it. If you need a restart because of enabled features, try the offline version.
 
     -o moveall <oldhost> <newhost1> [<newhost2> [<newhost3>]]
+    -o moveall-offline <oldhost> <newhost1> [<newhost2> [<newhost3>]]
 
-Move all containers on oldhost to newhost1 (and newhost2 (and newhost3)) in a round-robin fashion. This could be used to empty a host if you need to do maintainance.
+Move all containers on oldhost to newhost1 (and newhost2 (and newhost3)) in a round-robin fashion. This could be used to empty a host if you need to do maintainance. (See move|move-offline for more information.)
 
     -o start <container>
     -o stop <container>
