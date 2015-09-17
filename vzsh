@@ -94,9 +94,9 @@ Options:
 		Be quiet.
 
 Actions:
-	[-r] container [<command>]
+	[-r] <container> [<command>]
 		Run command/shell in container.
-	-x container [<command>]
+	-x <container> [<command>]
 		Run command/shell in container with X11 forwarding.
 	-l
 		Show list of all containers on all hosts.
