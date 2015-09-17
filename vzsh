@@ -101,8 +101,10 @@ Actions:
 	-l
 		Show list of all containers on all hosts.
 	-o move <container> <host>
+	-o move-offline <container> <host>
 		Move container to host.
 	-o moveall <host1> <host2> [<host3>]
+	-o moveall-offline <host1> <host2> [<host3>]
 		Move all containers from host1 to host2 [and host3]
 	-o start <container>
 		 Start container
@@ -377,7 +379,7 @@ case "$action" in
     case "$ccmd" in
       # move, start & stop have similar arguments.
       # Treat them all the same way.
-      move|start|stop)
+      move|move-offline|start|stop)
         vz_getctname $ct
         ct=$vz_return
         vz_gethost $ct
@@ -386,14 +388,14 @@ case "$action" in
         then
           $SSH $vzhost $ccmd $ct $otherhosts
         else
-          echo "operation: Container host not found."
+          echo "operation: Container host not found for $ct."
           exit 1
         fi
-        ;;
-      moveall)
+        break;;
+      moveall|moveall-offline)
         vzhost=$ct
         $SSH $vzhost $ccmd $otherhosts
-        ;;
+        break;;
       athosts)
         # $ct & $otherhosts contain the command to run
         vz_athosts hostrun $ct $otherhosts 

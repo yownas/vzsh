@@ -36,9 +36,11 @@ From vzsh:
   module <modulename> [<args>]
 
   move <ct> <host>
+  move-offline <ct> <host>
     Move container to another host.
 
   moveall <host> [<host>]
+  moveall-offline <host> [<host>]
     Move all containers to other hosts.
 
   run <ct> [<command>]
@@ -50,19 +52,27 @@ From vzsh:
 EOF
 }
 
-# vz_movect ct host
+# vz_movect live|offline <ct> <host>
 # Try to move a container to another host
 vz_movect() {
-  ct=$1
-  otherhost=$2
+  mode=$1
+  ct=$2
+  otherhost=$3
 
-  live=`vzlist -Hat | grep " ${ct}\$" | awk '{print $3}'`
-  if [ "$live" = "running" ]
-  then
-    live="--live"
-  else
-    live=""
-  fi
+  case "$mode" in
+    offline)
+      live=""
+      break;;
+    live)
+      live=`vzlist -Hat | grep " ${ct}\$" | awk '{print $3}'`
+      if [ "$live" = "running" ]; then
+        live="--live"
+      else
+        live=""
+      fi
+      break;;
+  esac
+
   vzmigrate --ssh="-o BatchMode=yes -o StrictHostKeyChecking=no" --remove-area no --keep-dst $live $otherhost $ct
 }
 
@@ -170,7 +180,9 @@ vz_parse() {
       list) action=list; shift;;
       module) action=module; shift; module=$1; shift; ccmd=$*; break;;
       move) action=move; shift; ct=$1; shift; otherhost=$1; break;;
+      move-offline) action=move-offline;shift;ct=$1;shift;otherhost=$1;break;;
       moveall) action=moveall; shift; otherhosts=$*; break;;
+      moveall-offline) action=moveall-offline; shift; otherhosts=$*; break;;
       run) action=run; shift; ct=$1; shift; ccmd=$*; break;;
       start) action=start; shift; ct=$1; break;;
       stop) action=stop; shift; ct=$1; break;;
@@ -192,6 +204,7 @@ user=nobody
 vz_parse_arg $*
 
 # Parse command
+echo "DEBUG: $SSH_ORIGINAL_COMMAND"
 vz_parse $SSH_ORIGINAL_COMMAND
 
 case "$action" in
@@ -227,18 +240,18 @@ case "$action" in
     fi
     break;;
 
-  move)
+  move|move-live)
     vz_checkperm operations $user move
     if [ "$vz_return" = "allowed" ]
     then
-      vz_movect $ct $otherhost
+      vz_movect live $ct $otherhost
     else
-      echo "$0: move denied for $user" 
+      echo "$0: move-live denied for $user" 
       exit 1
     fi
     break;;
 
-  moveall)
+  moveall|moveall-live)
     vz_checkperm operations $user move
     if [ "$vz_return" = "allowed" ]
     then
@@ -248,13 +261,42 @@ case "$action" in
         moveto=`echo $hosts | awk '{print $1}'`
         hosts=`echo $hosts" " | sed 's/^[^ ]* //;s/ $//'`
         [ -z "$hosts" ] && hosts=$otherhosts
-        vz_movect $ct $moveto
+        vz_movect live $ct $moveto
       done
     else
-      echo "$0: moveall denied for $user" 
+      echo "$0: moveall-live denied for $user" 
       exit 1
     fi
-    ;;
+    break;;
+
+  move-offline)
+    vz_checkperm operations $user move
+    if [ "$vz_return" = "allowed" ]
+    then
+      vz_movect offline $ct $otherhost
+    else
+      echo "$0: move-offline denied for $user" 
+      exit 1
+    fi
+    break;;
+
+  moveall-offline)
+    vz_checkperm operations $user move
+    if [ "$vz_return" = "allowed" ]
+    then
+      hosts=$otherhosts
+      for ct in `vzlist -Hat | awk '{print $5}'`
+      do
+        moveto=`echo $hosts | awk '{print $1}'`
+        hosts=`echo $hosts" " | sed 's/^[^ ]* //;s/ $//'`
+        [ -z "$hosts" ] && hosts=$otherhosts
+        vz_movect offline $ct $moveto
+      done
+    else
+      echo "$0: moveall-offline denied for $user" 
+      exit 1
+    fi
+    break;;
 
   run)
     # Run command/start shell in container.
