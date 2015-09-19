@@ -204,7 +204,6 @@ user=nobody
 vz_parse_arg $*
 
 # Parse command
-echo "DEBUG: $SSH_ORIGINAL_COMMAND"
 vz_parse $SSH_ORIGINAL_COMMAND
 
 case "$action" in
