@@ -15,6 +15,13 @@ vzshdini=${vzshprefix}/etc/vzshd.ini
 moduledir=${vzshprefix}/modulesd
 
 ############################
+# Logging
+############################
+
+logger "$0: $*"
+logger "$0: $SSH_ORIGINAL_COMMAND"
+
+############################
 # Functions
 ############################
 
