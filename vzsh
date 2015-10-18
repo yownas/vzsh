@@ -72,7 +72,18 @@ vz_updatestate() {
   touch $statefile
 
   # No not steal stdin. Get list of containers from all the hosts.
-  echo "" | vz_athosts list 2> /dev/null | tr '\t' ' ' >> $statefile
+  # echo "" | vz_athosts list 2> /dev/null | tr '\t' ' ' >> $statefile
+
+  # Parallelize all the things on all the hosts.
+  for vzhost in $vzhosts;
+  do
+    echo "" | $SSH -o LogLevel=QUIET $vzhost list 2> /dev/null > ${statefile}_${vzhost} &
+  done
+  wait
+  cat ${statefile}_* | tr '\t' ' ' > $statefile
+
+#      $SSH -o LogLevel=QUIET $vzhost $cmd $ccmd
+
 }
 
 # usage
@@ -479,10 +490,10 @@ EOF
       remote_home=`echo $gecos|cut -d: -f 6`
 
       # Create folder and copy temporary host-key
-      cat ${xkey} | $SSH $vzhost run $ct "(mkdir ${remote_home}/.vz 2>/dev/null);cat > ${remote_home}/.vz/x11.tmp$$"
+      cat ${xkey} | $SSH -o LogLevel=QUIET $vzhost run $ct "(mkdir ${remote_home}/.vz 2>/dev/null);cat > ${remote_home}/.vz/x11.tmp$$"
 
       # Write X11-keys, start remote sshd and connect using a dummy name.
-      ssh -i ${xkey} -XY -o "StrictHostKeyChecking=no" -o "ProxyCommand $SSH $vzhost run $ct \"chmod 700 ${remote_home}/.vz;(echo `tr -d '\012' < ${xkey}.pub` > ${remote_home}/.vz/x11.tmp$$.pub);chmod 600 ${remote_home}/.vz/x11.tmp$$*;/usr/sbin/sshd -i -o HostKey=${remote_home}/.vz/x11.tmp$$ -o AuthorizedKeysFile=${remote_home}/.vz/x11.tmp$$.pub -o UsePrivilegeSeparation=no -o UsePAM=no;rm ${remote_home}/.vz/x11.tmp$$.pub ${remote_home}/.vz/x11.tmp$$\"" -l $remote_user vzsh-x11-connection $ccmd
+      ssh -i ${xkey} -XY -o LogLevel=QUIET -o StrictHostKeyChecking=no -o VerifyHostKeyDNS=no -o EnableSSHKeysign=no -o HostbasedAuthentication=yes -o UserKnownHostsFile=/home/yes/.vz/host-yes-X11 -o "ProxyCommand $SSH $vzhost run $ct \"chmod 700 ${remote_home}/.vz;(echo `tr -d '\012' < ${xkey}.pub` > ${remote_home}/.vz/x11.tmp$$.pub);chmod 600 ${remote_home}/.vz/x11.tmp$$*;/usr/sbin/sshd -i -o HostbasedAuthentication=yes -o HostKey=${remote_home}/.vz/x11.tmp$$ -o AuthorizedKeysFile=${remote_home}/.vz/x11.tmp$$.pub -o UsePrivilegeSeparation=no -o UsePAM=no;rm ${remote_home}/.vz/x11.tmp$$.pub ${remote_home}/.vz/x11.tmp$$\"" -l $remote_user vzsh-x11-connection $ccmd
 
     else
       echo "xrun: Container not found."
