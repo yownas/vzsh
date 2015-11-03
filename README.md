@@ -238,6 +238,18 @@ If you need to use ssh transparently or have a mixed environment where switching
     Host *.vzcontainers.com 192.168.1.*
     ProxyCommand vzsh `host %h | sed 's/^.*pointer //;s/ has .*//;s/\.$//'` sshd -i
 
+Before:
+
+    > ssh -l root vztest.localdomain
+    ssh: connect to host vztest.localdomain port 22: Connection refused
+
+After:
+
+    > ssh -l root vztest.localdomain
+    Pseudo-terminal will not be allocated because stdin is not a terminal.
+    root@vztest.localdomain's password: 
+    Last login: Tue Nov  3 14:27:39 2015 from UNKNOWN
+    root@vztest:~# 
 
 ## Copyright
 
