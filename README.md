@@ -233,6 +233,12 @@ Without going through all hosts to update the state of the containters, list fil
     vzsh webhost.test ls
     vzsh -k webmaster webhost.test ls
 
+If you need to use ssh transparently or have a mixed environment where switching between ssh and vzsh is tricky you can add something like this to your ~/,ssh/config to use vzsh as a proxycommand for your containers.
+
+    Host *.vzcontainers.com 192.168.1.*
+    ProxyCommand vzsh `host %h | sed 's/^.*pointer //;s/ has .*//;s/\.$//'` sshd -i
+
+
 ## Copyright
 
 License: [The MIT License (MIT)](LICENSE)
