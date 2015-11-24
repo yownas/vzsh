@@ -71,19 +71,13 @@ vz_updatestate() {
   [ -f "$statefile" ] && rm -f $statefile
   touch $statefile
 
-  # No not steal stdin. Get list of containers from all the hosts.
-  # echo "" | vz_athosts list 2> /dev/null | tr '\t' ' ' >> $statefile
-
   # Parallelize all the things on all the hosts.
-  for vzhost in $vzhosts;
+  for tmp_vzhost in $vzhosts;
   do
-    echo "" | $SSH -o LogLevel=QUIET $vzhost list 2> /dev/null > ${statefile}_${vzhost} &
+    echo "" | $SSH -o LogLevel=QUIET $tmp_vzhost list 2> /dev/null > ${statefile}_${tmp_vzhost} &
   done
   wait
   cat ${statefile}_* | tr '\t' ' ' > $statefile
-
-#      $SSH -o LogLevel=QUIET $vzhost $cmd $ccmd
-
 }
 
 # usage
