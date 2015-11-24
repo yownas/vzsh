@@ -86,7 +86,7 @@ vz_movect() {
 # vz_runas user ct
 # Check which user to run as in ct
 vz_runas() {
-  export tmp_user=$1
+  export tmp_user=`echo $1 | sed 's/+/\\\\+/'`
   export tmp_ct=$2
 
   # Create search-string from ini-file
